@@ -1,0 +1,28 @@
+{
+  "name": "audx",
+  "version": "0.2.0",
+  "description": "Terminal-native DAW: pattern sequencing, stem mixing, VST hosting, live coding workflow",
+  "main": "src/audx/cli.py",
+  "bin": {
+    "audx": "src/audx/cli.py"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "python -m audx.cli",
+    "test": "pytest tests/"
+  },
+  "keywords": [
+    "audio",
+    "daw",
+    "midi",
+    "sequencer",
+    "terminal",
+    "cli",
+    "music",
+    "production",
+    "live-coding"
+  ],
+  "author": "Chris Schofield <chrisschofield@totalaudiopromo.com>",
+  "license": "MIT",
+  "private": true
+}
