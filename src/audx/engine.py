@@ -23,7 +23,7 @@ class AudioEngine:
     def __init__(self, sample_rate: int = 48000, buffer_size: int = 256):
         self.sample_rate = sample_rate
         self.buffer_size = buffer_size
-        self.stream: sd.Stream | None = None
+        self.stream: sd.OutputStream | None = None
         self.running = False
         self.lock = threading.RLock()
         self.channels = 16
@@ -43,7 +43,7 @@ class AudioEngine:
     def start(self):
         if self.stream and self.stream.active:
             return
-        self.stream = sd.Stream(
+        self.stream = sd.OutputStream(
             samplerate=self.sample_rate,
             blocksize=self.buffer_size,
             channels=2,
@@ -61,7 +61,7 @@ class AudioEngine:
             self.stream = None
         self.running = False
 
-    def _audio_callback(self, indata, outdata, frames, time_info, status):
+    def _audio_callback(self, outdata, frames, time_info, status):
         if status:
             print(f"[Audio] {status}")
         self.mix_buffer[:] = 0.0
