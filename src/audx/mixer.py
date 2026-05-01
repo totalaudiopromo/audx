@@ -1,13 +1,14 @@
 """16-channel mixer with levels, pan, mute/solo."""
+
 import numpy as np
-from typing import Optional
+
 from .engine import get_engine
 
 
 class Mixer:
     def __init__(self, channels: int = 16):
         self.channels = channels
-        # Fader: 0.0–2.0 linear (0dB=1.0), start at 0.8 (~-2dB)
+        # Fader: 0.0 to 2.0 linear (0dB=1.0), start at 0.8 (~-2dB)
         self.levels = np.ones(channels, dtype=np.float32) * 0.8
         self.pan = np.zeros(channels, dtype=np.float32)        # -1 L, +1 R
         self.mute = np.zeros(channels, dtype=bool)

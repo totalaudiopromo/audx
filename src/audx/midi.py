@@ -1,11 +1,12 @@
 """
 MIDI output support (Push 2 as generic MIDI controller, external synths).
 """
+
 import mido
-from typing import Optional
+
 
 class MidiOutput:
-    def __init__(self, port_name: Optional[str] = None):
+    def __init__(self, port_name: str | None = None):
         ports = mido.get_output_names()
         if port_name:
             self.port = mido.open_output(port_name)

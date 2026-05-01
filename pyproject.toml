@@ -17,6 +17,11 @@ dependencies = [
   "requests>=2.31.0",
 ]
 
+[project.optional-dependencies]
+ai = [
+    "librosa>=0.10.0",
+]
+
 [[project.authors]]
 name = "Chris Schofield"
 email = "chrisschofield@totalaudiopromo.com"

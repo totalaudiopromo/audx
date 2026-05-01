@@ -9,13 +9,13 @@ Handles:
 """
 
 import threading
-import time
-from typing import Optional, List
-from audx.pattern import get_pattern_engine
-from audx.sampler import get_sample_library
+
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
+
+from audx.pattern import get_pattern_engine
+from audx.sampler import get_sample_library
 
 
 class AudioEngine:
@@ -23,7 +23,7 @@ class AudioEngine:
     def __init__(self, sample_rate: int = 48000, buffer_size: int = 256):
         self.sample_rate = sample_rate
         self.buffer_size = buffer_size
-        self.stream: Optional[sd.Stream] = None
+        self.stream: sd.Stream | None = None
         self.running = False
         self.lock = threading.RLock()
         self.channels = 16
@@ -34,7 +34,7 @@ class AudioEngine:
         self.channel_gain = np.ones(self.channels, dtype=np.float32)
         self.master_level = 1.0
         self.scheduler_callback = None
-        self.active_voices: List["Voice"] = []
+        self.active_voices: list[Voice] = []
         self.pattern_engine = get_pattern_engine()
         self.sample_library = get_sample_library()
         # BPM set from config at runtime  # default, will be set from config
@@ -178,9 +178,9 @@ class SampleVoice(Voice):
         return block
 
 
-_engine: Optional[AudioEngine] = None
+_engine: AudioEngine | None = None
 
-def get_engine() -> Optional[AudioEngine]:
+def get_engine() -> AudioEngine | None:
     global _engine
     return _engine
 

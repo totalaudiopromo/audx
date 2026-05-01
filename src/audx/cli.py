@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import typer
+from rich.console import Console
 
 from audx import __version__
 from audx.config import CONFIG_DIR, DEFAULT_BPM, PROJECTS_DIR, SAMPLES_DIR
@@ -15,6 +16,8 @@ from audx.pattern import Pattern, get_pattern_engine
 from audx.project import Project, list_projects
 from audx.sampler import SampleLibrary
 from audx.ui.app import DAWApp
+
+console = Console()
 
 app = typer.Typer(help="audx — code your music, own your sound.")
 pattern_app = typer.Typer(help="Pattern commands")
@@ -25,6 +28,7 @@ push2_app = typer.Typer(help="Push 2 mapping commands")
 heartmula_app = typer.Typer(help="Heartmula bridge commands")
 sadact_app = typer.Typer(help="Sadact bridge commands")
 daemon_app = typer.Typer(help="audxd daemon commands")
+ai_app = typer.Typer(help="AI-assisted composition and analysis (optional extras)")
 app.add_typer(pattern_app, name="pattern")
 app.add_typer(samples_app, name="samples")
 app.add_typer(projects_app, name="projects")
@@ -33,6 +37,7 @@ app.add_typer(push2_app, name="push2")
 app.add_typer(heartmula_app, name="heartmula")
 app.add_typer(sadact_app, name="sadact")
 app.add_typer(daemon_app, name="daemon")
+app.add_typer(ai_app, name="ai")
 
 
 def _pattern_payload() -> list[dict]:
@@ -385,6 +390,83 @@ def daemon_save(path: str, name: str | None = None) -> None:
 
     typer.echo(save_state(path, name=name))
 
+
+
+# ── AI commands ───────────────────────────────────────────────────────────────
+
+@ai_app.command("pattern")
+def ai_pattern(
+    description: str = typer.Argument(..., help="Text description, e.g. 'dark halftime techno groove'"),
+    channel: int = typer.Option(0, "--channel", "-c", help="Mixer channel to assign"),
+) -> None:
+    """Generate a pattern from a text description using local AI or heuristics."""
+    from audx.ai.generator import generate, pattern_to_grid
+
+    result = generate(description, channel=channel)
+    print(f"Engine: {result.engine}")
+    print(f"Instrument: {result.params.instrument}")
+    print(f"Subdivision: {result.params.subdivision}")
+    print(f"Swing: {result.params.swing}")
+    print(f"Density: {result.params.density:.2f}")
+    print()
+    print(f"Grid (16): {pattern_to_grid(result.pattern, 16)}")
+    print(f"Hit count: {len(result.pattern.steps)}")
+@ai_app.command("similar")
+def ai_similar(
+    sample: Path = typer.Argument(..., help="Path to a sample to use as query"),
+    samples_dir: Path = typer.Option(None, "--dir", "-d", help="Sample library directory"),
+    limit: int = typer.Option(5, "--limit", "-l"),
+) -> None:
+    """Find the K most similar samples in the local library."""
+    try:
+        from audx.ai.similarity import EmbeddingIndex, compute_embedding
+    except ImportError as err:
+        console.print("[red]librosa not installed. uv sync --extra ai[/red]")
+        raise typer.Exit(1) from err
+
+    dir_ = samples_dir or Path(os.getenv("AUDX_SAMPLES", str(SAMPLES_DIR)))
+    index = EmbeddingIndex.load_or_build(dir_)
+    query_vec = compute_embedding(sample)
+    matches = index.search(query_vec, limit=limit)
+    console.print(f"Top {len(matches)} matches for [cyan]{sample.name}[/cyan]:")
+    for m in matches:
+        console.print(f"  {m.path}  [dim](distance {m.distance:.3f})[/dim]")
+
+@ai_app.command("tag")
+def ai_tag(
+    sample: Path = typer.Argument(..., help="Sample file to tag"),
+) -> None:
+    """Auto-tag a sample with timbre descriptors."""
+    try:
+        from audx.ai.tagger import tag_sample
+    except ImportError as err:
+        console.print("[red]librosa not installed. uv sync --extra ai[/red]")
+        raise typer.Exit(1) from err
+
+    tags = tag_sample(sample)
+    console.print(f"Tags: [cyan]{', '.join(tags)}[/cyan]")
+
+@ai_app.command("groove")
+def ai_groove(
+    reference: Path = typer.Argument(..., help="Reference loop to analyse"),
+    instrument: str = typer.Option("hh", "--inst", "-i"),
+) -> None:
+    """Extract groove (BPM, swing, velocity) from a reference loop."""
+    try:
+        from audx.ai.groove import extract_groove, groove_to_dsl
+    except ImportError as err:
+        console.print("[red]librosa not installed. uv sync --extra ai[/red]")
+        raise typer.Exit(1) from err
+
+    profile = extract_groove(reference)
+    if profile is None:
+        console.print("[red]Groove extraction failed (librosa missing?)[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"BPM: [green]{profile.bpm:.1f}[/green]")
+    console.print(f"Swing: {profile.swing:.2f}")
+    console.print()
+    console.print(groove_to_dsl(profile, instrument=instrument))
 
 if __name__ == "__main__":
     app()

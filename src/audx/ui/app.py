@@ -110,7 +110,7 @@ class TapTempoCounter:
         self.times = self.times[-self.max_taps :]
         if len(self.times) < 2:
             return None
-        intervals = [b - a for a, b in zip(self.times, self.times[1:]) if b > a]
+        intervals = [b - a for a, b in zip(self.times, self.times[1:], strict=False) if b > a]
         if not intervals:
             return None
         return round(60.0 / (sum(intervals) / len(intervals)), 1)
@@ -242,4 +242,4 @@ def run_tui(project: Path | None = None, samples_dir: Path | None = None) -> Non
     DAWApp(project=project, samples_dir=samples_dir).run()
 
 
-__all__ = ["run_tui", "DAWApp", "TapTempoCounter"]
+__all__ = ["DAWApp", "TapTempoCounter", "run_tui"]

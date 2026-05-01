@@ -1,12 +1,12 @@
 """
 Sample library management: indexing, tag search, playback voices.
 """
-import soundfile as sf
-import numpy as np
-from pathlib import Path
-from typing import Dict, List, Optional
 import sqlite3
-import json
+from pathlib import Path
+
+import numpy as np
+import soundfile as sf
+
 
 class SampleLibrary:
     """Index and access your sample collection."""
@@ -15,7 +15,7 @@ class SampleLibrary:
         self.db_path = Path.home() / ".config" / "audx" / "samples.db"
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
-        self._cache: Dict[Path, np.ndarray] = {}
+        self._cache: dict[Path, np.ndarray] = {}
 
     def _init_db(self):
         conn = sqlite3.connect(str(self.db_path))
@@ -35,7 +35,7 @@ class SampleLibrary:
         conn.commit()
         conn.close()
 
-    def index(self, path: Optional[Path] = None, recursive: bool = True):
+    def index(self, path: Path | None = None, recursive: bool = True):
         """Scan `path` (or self.root) for audio files and add to index."""
         root = path or self.root
         for ext in ('*.wav', '*.flac', '*.mp3', '*.aif', '*.aiff', '*.ogg'):
@@ -60,12 +60,12 @@ class SampleLibrary:
         except Exception as e:
             print(f"Error indexing {path}: {e}")
 
-    def search(self, query: str = "", tags: List[str] = None, limit: int = 20) -> List[dict]:
+    def search(self, query: str = "", tags: list[str] | None = None, limit: int = 20) -> list[dict]:
         """Search samples by name/tags."""
         conn = sqlite3.connect(str(self.db_path))
         cur = conn.cursor()
         sql = "SELECT id, path, name, duration, tags FROM samples WHERE 1=1"
-        params = []
+        params: list[str | int] = []
         if query:
             sql += " AND name LIKE ?"
             params.append(f"%{query}%")
@@ -78,13 +78,13 @@ class SampleLibrary:
         cur.execute(sql, params)
         rows = cur.fetchall()
         conn.close()
-        return [dict(id=row[0], path=row[1], name=row[2], duration=row[3], tags=row[4]) for row in rows]
+        return [{"id": row[0], "path": row[1], "name": row[2], "duration": row[3], "tags": row[4]} for row in rows]
 
     def load(self, path: Path) -> np.ndarray:
         """Load sample data, caching."""
         p = Path(path)
         if p in self._cache:
             return self._cache[p]
-        data, sr = sf.read(str(p), always_2d=True)  # always stereo for mixing
+        data, _sr = sf.read(str(p), always_2d=True)  # always stereo for mixing
         self._cache[p] = data
         return data
