@@ -181,7 +181,6 @@ class SampleVoice(Voice):
 _engine: Optional[AudioEngine] = None
 
 def get_engine() -> Optional[AudioEngine]:
-    global _engine
     return _engine
 
 def init_engine(sample_rate=None, buffer_size=None) -> AudioEngine:

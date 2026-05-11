@@ -1,8 +1,12 @@
 """
 16-channel mixer with per-channel level, pan, sends, and master output.
 """
+from typing import TYPE_CHECKING, List, Optional
+
 import numpy as np
-from typing import List, Optional
+
+if TYPE_CHECKING:
+    from audx.audio.voice import Voice
 
 class Channel:
     """One mixer strip."""
