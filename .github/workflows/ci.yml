@@ -34,7 +34,7 @@ jobs:
     - name: Type check with mypy
       run: |
         pip install mypy
-        mypy src/audx --ignore-missing-imports
+        mypy --ignore-missing-imports
     
     - name: Test with pytest
       run: |
