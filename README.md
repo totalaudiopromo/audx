@@ -35,15 +35,42 @@ audx launch
 ## Commands
 
 ```bash
-audx launch [project.audx]              # Start TUI
+audx init <name>                        # Scaffold project folder (stems/, renders/, git init)
+audx open [project]                     # Open TUI on a project file or folder
+audx launch [project.audx]              # Same as `open`, legacy spelling
 audx pattern create <name> "<dsl>"      # Parse/check a pattern
 audx pattern list                       # List patterns in current process
+audx track add <name> "<dsl>" -c 2      # Add a track to the in-process engine
+audx track rm <name>                    # Remove a track
+audx mix set <ch> gain <dB>             # Set channel gain
+audx mix set <ch> mute on|off           # Set channel mute
+audx mute <ch>                          # Toggle channel mute
 audx samples index ~/Samples            # Index local samples
-audx samples list --query kick          # Search indexed samples
+audx stems index ~/Samples              # Alias matching spec §06
+audx stems search 909 kick              # Fuzzy-search the sample index
+audx render "kick 4/4" --sample k.wav   # Offline WAV render
+audx render ... --stems                 # Per-track stems render
+audx render ... --variations 10         # Stochastic variations
+audx diff a.audx b.audx                 # Human-readable project diff
+audx finish project.audx --profile ukg  # Render + master via sadact-finisher
+audx fork project new-name              # Cheap branching
 audx save beat.audx                     # Save current in-process state
 audx load beat.audx                     # Load and print project state
 audx projects list                      # List saved project files
-audx render "kick 4/4" --sample kick.wav # Offline WAV render
+audx watch project.audx                 # Hot-reload .audx on save
+audx serve --port 8080                  # Read-only localhost dashboard
+audx voice                              # Probe on-device voice control
+audx rec --calibrate                    # Measure round-trip latency
+audx export midi out.mid                # Export patterns to Standard MIDI File
+audx midi list                          # List MIDI inputs/outputs
+audx midi out "Push 2"                  # Send MIDI clock to a device
+audx midi rec name --bars 1             # Record incoming MIDI as a pattern
+audx slot set project.audx A            # Save current patterns into slot A
+audx slot next project.audx B           # Activate slot B
+audx slot list project.audx             # Show all four slots
+audx macro record a "x j x j"           # Store a macro in register a
+audx macro replay a                     # Print register a
+audx ai key sk-...                      # Store AI API key in OS keychain
 audx plugins scan                       # Discover AU/VST/VST3 plugins only
 audx push2 map                          # Print MIDI mapping scaffold
 audx heartmula status                   # Check local heartlib bridge
@@ -58,16 +85,41 @@ Flat backwards-compatible aliases also exist for early scripts: `pattern-create`
 ## Pattern DSL
 
 ```bash
-audx pattern create kick "kick 4/4"
-audx pattern create hats "hh 16x8 | vel 0.45 | channel 2"
-audx pattern create groove "x--- -x-- --x- ---x"
+audx pattern create kick "kick 4/4"                          # four on the floor
+audx pattern create snare "snare 2/8"                        # beats 2 and 4
+audx pattern create hats "hh 16x8 | vel 0.45 | channel 2"    # 8 hats over 16 steps
+audx pattern create groove "x--- -x-- --x- ---x"             # x/rest grid
+audx pattern create perc "perc e(5,16,2)"                    # Euclidean, rotated
+audx pattern create clap "clap [1.0.1.0.1.1.0.0]"            # explicit grid
 ```
 
-Supported pipe options today:
+Supported pipe operators:
 
 - `vel` / `velocity`: `0.0` to `1.0`
 - `channel` / `ch`: mixer channel index
-- `swing`: delays odd 16th steps during scheduling. Example: `swing 50%` moves `0.25` beat events to `0.375`.
+- `swing`: delays odd 16th steps. Example: `swing 50%` moves `0.25` beat events to `0.375`.
+- `humanize`: percent jitter on velocity per fire (e.g. `humanize 8%`)
+- `chance`: per-step trigger probability (`chance 70%`)
+- `gain`: ±dB on the track (`gain -3db`)
+- `pan`: `L100..R100` or `-1..1` (`pan L50`)
+- `tune`: ±semitones (`tune -2st`)
+
+## Project files
+
+`audx init my-loop` lays out:
+
+```
+my-loop/
+  project.audx          # JSON: bpm, patterns, slots, mixer, finisher config
+  stems/                # WAV/AIFF source material
+  renders/              # rendered output (gitignored)
+  .git/                 # optional, created by default
+```
+
+The project file carries a `[finisher]` block that maps 1:1 to sadact-finisher
+CLI flags (`profile`, `platform`, `loudness`, `tone`, `energy`, `reference`,
+`use_stems`, `drums_up`, `bass_down`). `audx finish` uses these to drive the
+mastering pass.
 
 ## Development
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from typing import ClassVar
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -152,8 +153,21 @@ class TransportBar(Horizontal):
                 self.query_one("#bpm", Static).update(f"BPM {bpm}")
 
 
+class StatusLine(Static):
+    """Bottom status: mode indicator + active pattern slot."""
+
+    def render(self) -> str:
+        app = self.app
+        slot = getattr(app, "active_slot", "A")
+        mode = getattr(app, "mode", "NORMAL")
+        slots = " · ".join(
+            f"[{s}]" if s == slot else s for s in ("A", "B", "C", "D")
+        )
+        return f"[{mode}]  PAT {slots}  ·  ? help  ·  q quit"
+
+
 class DAWApp(App):
-    """audx TUI: compact mixer + transport."""
+    """audx TUI: compact mixer + transport with vim-style modal bindings."""
 
     CSS = """
     Screen { background: #111111; color: #e0e0e0; }
@@ -164,16 +178,27 @@ class DAWApp(App):
     VUMeter { color: #a8c087; height: 1; }
     PatternRow { height: 3; background: #161616; border: solid #333333; margin: 1; }
     TransportBar { height: 3; background: #1e1e1e; border: solid #333333; margin: 1; }
+    StatusLine { height: 1; background: #1e1e1e; color: #d4a574; }
     """
 
     TITLE = "audx"
     SUB_TITLE = "code your music"
+
+    SLOT_KEYS: ClassVar[dict[str, str]] = {
+        "A": "shift+1",
+        "B": "shift+2",
+        "C": "shift+3",
+        "D": "shift+4",
+    }
 
     def __init__(self, project: Path | None = None, samples_dir: Path | None = None):
         super().__init__()
         self.project = project
         self.samples_dir = samples_dir
         self.tap_counter = TapTempoCounter()
+        self.active_slot = "A"
+        self.mode = "NORMAL"
+        self.selected_channel = 0
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -182,6 +207,7 @@ class DAWApp(App):
                 yield ChannelStrip(channel=channel, label=f"{channel + 1:02d}")
         yield PatternRow()
         yield TransportBar()
+        yield StatusLine(id="status")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -220,16 +246,53 @@ class DAWApp(App):
             self.query_one(f"#vu-{channel}", VUMeter).level = float(levels[channel])
 
     def on_key(self, event) -> None:
-        if event.key == "space":
+        """Modal keymap per spec §04 (NORMAL mode keys)."""
+        key = event.key
+        engine = get_engine()
+        pattern_engine = get_pattern_engine()
+
+        if key == "space":
             play_button = self.query_one("#play", Button)
             if str(play_button.label) == "▶":
                 play_button.press()
             else:
                 self.query_one("#stop", Button).press()
-        elif event.key in "123456789":
-            channel = int(event.key) - 1
+        elif key == "full_stop" or key == ".":
+            # stop + return to bar 1
+            if engine is not None:
+                engine.stop()
+            pattern_engine.stop()
+            pattern_engine.current_bar = 0
+            pattern_engine.current_beat = 0.0
+        elif key in "123456789":
+            channel = int(key) - 1
             if channel < CHANNELS_COUNT:
+                self.selected_channel = channel
                 self.query_one(f"#mute-{channel}", Button).press()
+        elif key in {"left_square_bracket", "["}:
+            self.set_bpm(max(20.0, pattern_engine.bpm - 1.0))
+        elif key in {"right_square_bracket", "]"}:
+            self.set_bpm(min(300.0, pattern_engine.bpm + 1.0))
+        elif key in {"left_curly_bracket", "{"}:
+            self._adjust_selected_swing(-0.01)
+        elif key in {"right_curly_bracket", "}"}:
+            self._adjust_selected_swing(0.01)
+        elif key == "t":
+            self.query_one("#tap", Button).press()
+        elif key == "m":
+            self.query_one(f"#mute-{self.selected_channel}", Button).press()
+        elif key == "q":
+            self.exit()
+        elif key in {"shift+1", "shift+2", "shift+3", "shift+4"}:
+            slot_index = int(key.split("+")[1])
+            self.active_slot = "ABCD"[slot_index - 1]
+            self.query_one("#status", StatusLine).refresh()
+
+    def _adjust_selected_swing(self, delta: float) -> None:
+        engine = get_pattern_engine()
+        for pattern in engine.patterns.values():
+            if pattern.channel == self.selected_channel:
+                pattern.swing = max(0.0, min(pattern.swing + delta, 1.0))
 
     def set_bpm(self, bpm: float) -> None:
         engine = get_engine()
