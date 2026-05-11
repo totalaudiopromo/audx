@@ -9,13 +9,13 @@ Handles:
 """
 
 import threading
-import time
-from typing import Optional, List
-from audx.pattern import get_pattern_engine
-from audx.sampler import get_sample_library
+
 import numpy as np
 import sounddevice as sd
 import soundfile as sf
+
+from audx.pattern import get_pattern_engine
+from audx.sampler import get_sample_library
 
 
 class AudioEngine:
@@ -23,7 +23,7 @@ class AudioEngine:
     def __init__(self, sample_rate: int = 48000, buffer_size: int = 256):
         self.sample_rate = sample_rate
         self.buffer_size = buffer_size
-        self.stream: Optional[sd.Stream] = None
+        self.stream: sd.OutputStream | None = None
         self.running = False
         self.lock = threading.RLock()
         self.channels = 16
@@ -34,7 +34,7 @@ class AudioEngine:
         self.channel_gain = np.ones(self.channels, dtype=np.float32)
         self.master_level = 1.0
         self.scheduler_callback = None
-        self.active_voices: List["Voice"] = []
+        self.active_voices: list[Voice] = []
         self.pattern_engine = get_pattern_engine()
         self.sample_library = get_sample_library()
         # BPM set from config at runtime  # default, will be set from config
@@ -43,7 +43,7 @@ class AudioEngine:
     def start(self):
         if self.stream and self.stream.active:
             return
-        self.stream = sd.Stream(
+        self.stream = sd.OutputStream(
             samplerate=self.sample_rate,
             blocksize=self.buffer_size,
             channels=2,
@@ -61,7 +61,7 @@ class AudioEngine:
             self.stream = None
         self.running = False
 
-    def _audio_callback(self, indata, outdata, frames, time_info, status):
+    def _audio_callback(self, outdata, frames, time_info, status):
         if status:
             print(f"[Audio] {status}")
         self.mix_buffer[:] = 0.0
@@ -178,9 +178,9 @@ class SampleVoice(Voice):
         return block
 
 
-_engine: Optional[AudioEngine] = None
+_engine: AudioEngine | None = None
 
-def get_engine() -> Optional[AudioEngine]:
+def get_engine() -> AudioEngine | None:
     return _engine
 
 def init_engine(sample_rate=None, buffer_size=None) -> AudioEngine:

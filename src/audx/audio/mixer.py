@@ -1,12 +1,11 @@
 """
 16-channel mixer with per-channel level, pan, sends, and master output.
 """
-from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 
-if TYPE_CHECKING:
-    from audx.audio.voice import Voice
+from audx.audio.voice import Voice
+
 
 class Channel:
     """One mixer strip."""
@@ -18,9 +17,9 @@ class Channel:
         self.solo = False
         self.sends = [0.0, 0.0]  # two aux sends (future)
         self.insert_gain = 1.0
-        self._voices: List['Voice'] = []
+        self._voices: list[Voice] = []
 
-    def add_voice(self, voice):
+    def add_voice(self, voice: Voice) -> None:
         self._voices.append(voice)
 
     def remove_finished(self):

@@ -2,8 +2,9 @@
 A single polyphonic voice for sample playback.
 Handles pitch, gain, pan, and a simple ADSR envelope to avoid clicks.
 """
+
 import numpy as np
-from typing import Optional
+
 
 class Voice:
     """One playing instance of a sample (polyphonic)."""
