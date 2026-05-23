@@ -139,7 +139,8 @@ open http://127.0.0.1:8080/app?project=/tmp/my-loop/project.audx
 ```
 
 The browser app reads the `.audx` project via localhost, plays patterns with
-Web Audio, and can load extra audio files directly in the browser session.
+Web Audio, supports step editing, BPM changes, mute/gain/pan mixer controls,
+and saves edits back to the same project file used by the terminal.
 
 ## Development
 

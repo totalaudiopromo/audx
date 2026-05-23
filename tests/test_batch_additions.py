@@ -152,6 +152,11 @@ def test_web_serves_browser_app_and_project_audio(tmp_path: Path) -> None:
         assert "AudioContext" in html
         assert "gain_db" in html
         assert "createStereoPanner" in html
+        assert 'id="save"' in html
+        assert 'id="bpm"' in html
+        assert 'type="range"' in html
+        assert "markDirty" in html
+        assert "saveProject" in html
 
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/project?path={project_path}", timeout=1) as resp:
             payload = json.loads(resp.read().decode())
@@ -160,6 +165,60 @@ def test_web_serves_browser_app_and_project_audio(tmp_path: Path) -> None:
 
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/audio?path={project_path.parent / 'stems' / 'kick.wav'}", timeout=1) as resp:
             assert resp.read() == b"fake-audio"
+    finally:
+        httpd.shutdown()
+
+
+def test_web_project_api_saves_browser_edits(tmp_path: Path) -> None:
+    project_path = init_project("browser-save", parent=tmp_path, git=False)
+    project = Project.load(project_path)
+    project.bpm = 140.0
+    project.mixer = [{"channel": 0, "name": "kick", "sample": "stems/kick.wav", "gain_db": 0.0, "pan": 0.0}]
+    project.patterns = [{"name": "kick", "dsl": 'kick "stems/kick.wav" [1000] | channel 0', "channel": 0}]
+    project.save(project_path)
+
+    import http.server
+
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), __import__("audx.web", fromlist=["_Handler"])._Handler)
+    port = httpd.server_address[1]
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        payload = {
+            "path": str(project_path),
+            "project": {
+                "name": "browser-save",
+                "bpm": 171.0,
+                "time_sig": "4/4",
+                "patterns": [{"name": "kick", "dsl": 'kick "stems/kick.wav" [1010] | channel 0', "channel": 0}],
+                "mixer": [
+                    {
+                        "channel": 0,
+                        "name": "kick",
+                        "sample": "stems/kick.wav",
+                        "gain_db": -6.0,
+                        "pan": -0.25,
+                        "mute": True,
+                    }
+                ],
+            },
+        }
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/project",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=1) as resp:
+            saved = json.loads(resp.read().decode())
+        assert saved["ok"] is True
+
+        reloaded = Project.load(project_path)
+        assert reloaded.bpm == pytest.approx(171.0)
+        assert reloaded.patterns[0]["dsl"] == 'kick "stems/kick.wav" [1010] | channel 0'
+        assert reloaded.mixer[0]["gain_db"] == -6.0
+        assert reloaded.mixer[0]["pan"] == -0.25
+        assert reloaded.mixer[0]["mute"] is True
     finally:
         httpd.shutdown()
 
