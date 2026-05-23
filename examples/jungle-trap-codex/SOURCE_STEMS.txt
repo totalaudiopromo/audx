@@ -1,0 +1,4 @@
+drum ghost: /Users/chrisschofield/workspace/active/sadact-finisher/benchmarks/128 BPM - Clifford Reeves - I'm Not Listening (sadact Remix) - STEMS DRUMS.wav
+perc tick: /Users/chrisschofield/workspace/active/sadact-finisher/benchmarks/128 BPM - Clifford Reeves - I'm Not Listening (sadact Remix) - STEMS PERCUSSION.wav
+cymbal air: /Users/chrisschofield/workspace/active/sadact-finisher/benchmarks/Tensnake, Jessy Lanza - Keep It Secret (sadact Remix) CYMBALS [2023-11-03 144057].wav
+core kick/snare/hat/rim/808: generated locally for cleaner audx playback

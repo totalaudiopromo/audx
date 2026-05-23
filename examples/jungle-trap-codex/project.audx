@@ -1,0 +1,194 @@
+{
+  "active_slot": "A",
+  "bpm": 170.0,
+  "created_at": "2026-05-23T21:08:39.855779",
+  "finisher": {
+    "bass_down": 0,
+    "drums_up": 0,
+    "energy": "high",
+    "loudness": "demo",
+    "platform": "browser",
+    "profile": "jungle-trap",
+    "reference": null,
+    "tone": "tight-dark",
+    "use_stems": false
+  },
+  "mixer": [
+    {
+      "channel": 0,
+      "gain_db": -2.0,
+      "mute": false,
+      "name": "kick",
+      "pan": 0.0,
+      "sample": "stems/clean-jungle-kick.wav",
+      "solo": false
+    },
+    {
+      "channel": 1,
+      "gain_db": -4.0,
+      "mute": false,
+      "name": "snare",
+      "pan": 0.0,
+      "sample": "stems/tight-trap-snare.wav",
+      "solo": false
+    },
+    {
+      "channel": 2,
+      "gain_db": -13.0,
+      "mute": false,
+      "name": "ghost-break",
+      "pan": -0.12,
+      "sample": "stems/quiet-break-ghost.wav",
+      "solo": false
+    },
+    {
+      "channel": 3,
+      "gain_db": -12.0,
+      "mute": false,
+      "name": "hat-roll",
+      "pan": 0.18,
+      "sample": "stems/sharp-rolling-hat.wav",
+      "solo": false
+    },
+    {
+      "channel": 4,
+      "gain_db": -10.0,
+      "mute": false,
+      "name": "rim",
+      "pan": -0.22,
+      "sample": "stems/wood-rim-skitter.wav",
+      "solo": false
+    },
+    {
+      "channel": 5,
+      "gain_db": -5.5,
+      "mute": false,
+      "name": "808",
+      "pan": 0.0,
+      "sample": "stems/clean-808-drop.wav",
+      "solo": false
+    },
+    {
+      "channel": 6,
+      "gain_db": -17.0,
+      "mute": false,
+      "name": "local-tick",
+      "pan": 0.3,
+      "sample": "stems/local-perc-tick.wav",
+      "solo": false
+    },
+    {
+      "channel": 7,
+      "gain_db": -18.0,
+      "mute": false,
+      "name": "air",
+      "pan": 0.0,
+      "sample": "stems/low-cymbal-air.wav",
+      "solo": false
+    }
+  ],
+  "name": "jungle-trap-codex-v2",
+  "patterns": [
+    {
+      "channel": 0,
+      "dsl": "kick \"stems/clean-jungle-kick.wav\" [1000000010000100] | channel 0",
+      "length_beats": 4,
+      "name": "kick"
+    },
+    {
+      "channel": 1,
+      "dsl": "snare \"stems/tight-trap-snare.wav\" [0000100000001000] | channel 1",
+      "length_beats": 4,
+      "name": "snare"
+    },
+    {
+      "channel": 2,
+      "dsl": "ghost \"stems/quiet-break-ghost.wav\" [0010001000100000] | channel 2",
+      "length_beats": 4,
+      "name": "ghost-break"
+    },
+    {
+      "channel": 3,
+      "dsl": "hat \"stems/sharp-rolling-hat.wav\" [1011101110111011] | channel 3",
+      "length_beats": 4,
+      "name": "hat-roll"
+    },
+    {
+      "channel": 4,
+      "dsl": "rim \"stems/wood-rim-skitter.wav\" [0001000000010010] | channel 4",
+      "length_beats": 4,
+      "name": "rim"
+    },
+    {
+      "channel": 5,
+      "dsl": "bass \"stems/clean-808-drop.wav\" [1000000000100000] | channel 5",
+      "length_beats": 4,
+      "name": "808"
+    },
+    {
+      "channel": 6,
+      "dsl": "perc \"stems/local-perc-tick.wav\" [0000010000000100] | channel 6",
+      "length_beats": 4,
+      "name": "local-tick"
+    },
+    {
+      "channel": 7,
+      "dsl": "air \"stems/low-cymbal-air.wav\" [1000000000000000] | channel 7",
+      "length_beats": 4,
+      "name": "air"
+    }
+  ],
+  "slots": {
+    "A": [
+      {
+        "channel": 0,
+        "dsl": "kick \"stems/clean-jungle-kick.wav\" [1000000010000100] | channel 0",
+        "length_beats": 4,
+        "name": "kick"
+      },
+      {
+        "channel": 1,
+        "dsl": "snare \"stems/tight-trap-snare.wav\" [0000100000001000] | channel 1",
+        "length_beats": 4,
+        "name": "snare"
+      },
+      {
+        "channel": 2,
+        "dsl": "ghost \"stems/quiet-break-ghost.wav\" [0010001000100000] | channel 2",
+        "length_beats": 4,
+        "name": "ghost-break"
+      },
+      {
+        "channel": 3,
+        "dsl": "hat \"stems/sharp-rolling-hat.wav\" [1011101110111011] | channel 3",
+        "length_beats": 4,
+        "name": "hat-roll"
+      },
+      {
+        "channel": 4,
+        "dsl": "rim \"stems/wood-rim-skitter.wav\" [0001000000010010] | channel 4",
+        "length_beats": 4,
+        "name": "rim"
+      },
+      {
+        "channel": 5,
+        "dsl": "bass \"stems/clean-808-drop.wav\" [1000000000100000] | channel 5",
+        "length_beats": 4,
+        "name": "808"
+      },
+      {
+        "channel": 6,
+        "dsl": "perc \"stems/local-perc-tick.wav\" [0000010000000100] | channel 6",
+        "length_beats": 4,
+        "name": "local-tick"
+      },
+      {
+        "channel": 7,
+        "dsl": "air \"stems/low-cymbal-air.wav\" [1000000000000000] | channel 7",
+        "length_beats": 4,
+        "name": "air"
+      }
+    ]
+  },
+  "time_sig": "4/4"
+}

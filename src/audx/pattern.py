@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import random
 import re
+import shlex
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 
 @dataclass
@@ -80,6 +82,7 @@ class Pattern:
         self.tune_semitones = _parse_semitones(opts.get("tune", self.tune_semitones))
         velocity = float(opts.get("vel", opts.get("velocity", 0.8)) or 0.8)
         channel = int(opts.get("ch", opts.get("channel", self.channel)) or 0)
+        self.channel = channel
 
         grid_match = re.search(r"\[([^\[\]]+)\]", base)
         if base.startswith("[") and base.endswith("]"):
@@ -146,10 +149,25 @@ class Pattern:
         ]
 
     def _parse_instrument(self, base: str, velocity: float, channel: int) -> None:
-        parts = base.split(None, 1)
+        parts = shlex.split(base)
+        if not parts:
+            self.steps = []
+            return
+
         instr = parts[0]
         sample = self._sample_name_from_instr(instr)
-        spec = parts[1].strip() if len(parts) > 1 else "1/4"
+        spec = "1/4"
+
+        if len(parts) >= 3 and _looks_like_sample_path(parts[1]):
+            sample = parts[1]
+            spec = " ".join(parts[2:])
+        elif len(parts) >= 2 and _looks_like_sample_path(parts[0]):
+            sample = parts[0]
+            instr = Path(parts[0]).stem
+            self.name = self.name or instr
+            spec = " ".join(parts[1:])
+        elif len(parts) > 1:
+            spec = " ".join(parts[1:])
 
         beats = self._beats_for_spec(spec)
         self.steps = [
@@ -388,6 +406,11 @@ def _parse_semitones(value: object) -> float:
         return float(text)
     except ValueError:
         return 0.0
+
+
+def _looks_like_sample_path(value: str) -> bool:
+    suffix = Path(value).suffix.lower()
+    return "/" in value or "\\" in value or suffix in {".wav", ".flac", ".mp3", ".ogg", ".aiff", ".aif"}
 
 
 def _euclidean_grid(pulses: int, steps: int, rotation: int = 0) -> list[int]:

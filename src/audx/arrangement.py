@@ -5,11 +5,13 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import soundfile as sf
 
 from audx.pattern import Pattern
+from audx.project import Project
 from audx.sampler import SampleLibrary
 
 
@@ -86,6 +88,27 @@ def render_arrangement(
     return output_path
 
 
+def render_project(project_path: Path, output_path: Path, bars: int | None = None, sample_rate: int = 44100) -> Path:
+    """Render a saved .audx project using stems relative to the project folder."""
+    project_path = Path(project_path)
+    project = Project.load(project_path)
+    library = SampleLibrary(project_path.parent)
+    library.build_index(recursive=True)
+    arrangement = Arrangement(bpm=project.bpm)
+    render_bars = bars or 4
+    for pdata in project.patterns:
+        pattern = Pattern(
+            name=str(pdata["name"]),
+            dsl=str(pdata["dsl"]),
+            length_beats=float(pdata.get("length_beats", 4)),
+            channel=int(pdata.get("channel", 0)),
+            swing=float(pdata.get("swing", 0.0)),
+        )
+        pattern.parse_dsl()
+        arrangement.add(pattern, start_bar=0, bars=render_bars)
+    return render_arrangement(arrangement, library, output_path, sample_rate=sample_rate)
+
+
 def _resample_linear(data: np.ndarray, source_sr: int, target_sr: int) -> np.ndarray:
     if source_sr == target_sr:
         return data
@@ -94,4 +117,4 @@ def _resample_linear(data: np.ndarray, source_sr: int, target_sr: int) -> np.nda
     old_x = np.linspace(0.0, 1.0, len(data), endpoint=False)
     new_x = np.linspace(0.0, 1.0, target_len, endpoint=False)
     channels = [np.interp(new_x, old_x, data[:, ch]) for ch in range(data.shape[1])]
-    return np.stack(channels, axis=1).astype(np.float32)
+    return cast(np.ndarray, np.stack(channels, axis=1).astype(np.float32))

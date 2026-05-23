@@ -58,7 +58,7 @@ def measure_impulse(duration_s: float = 1.0, sample_rate: int = 44100) -> float:
     """
     try:
         import numpy as np
-        import sounddevice as sd  # type: ignore[import-not-found]
+        import sounddevice as sd
     except Exception:
         return 0.0
 

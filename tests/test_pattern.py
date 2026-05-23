@@ -22,6 +22,14 @@ def test_pattern_parsing_kick_44():
     assert all(step.channel == 2 for step in pattern.steps)
 
 
+def test_pattern_parses_quoted_sample_path_source():
+    pattern = Pattern(name="kick", dsl='kick "kicks/909_punch.wav" 4/4 | channel 2')
+    pattern.parse_dsl()
+    assert len(pattern.steps) == 4
+    assert all(step.sample == "kicks/909_punch.wav" for step in pattern.steps)
+    assert all(step.channel == 2 for step in pattern.steps)
+
+
 def test_pattern_engine_accumulates_audio_callbacks():
     engine = PatternEngine(bpm=120.0)
     pattern = Pattern(name="kick", dsl="kick 4/4")

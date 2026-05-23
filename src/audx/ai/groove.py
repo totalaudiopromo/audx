@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 try:
     import librosa
@@ -29,15 +30,16 @@ def extract_groove(path: Path, steps: int = 16) -> GrooveProfile | None:
     if y.ndim > 1:
         y = y.mean(axis=1)
 
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    librosa_api = cast(Any, librosa)
+    tempo, _ = librosa_api.beat.beat_track(y=y, sr=sr)
     bpm = float(tempo)
 
-    onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=512)
+    onset_env = librosa_api.onset.onset_strength(y=y, sr=sr, hop_length=512)
     bar_duration = 60.0 / bpm * 4
     step_dur = bar_duration / steps
 
     step_activation = [False] * steps
-    times = librosa.times_like(onset_env, sr=sr, hop_length=512)
+    times = librosa_api.times_like(onset_env, sr=sr, hop_length=512)
     for t in times:
         if t >= bar_duration:
             break

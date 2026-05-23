@@ -23,7 +23,7 @@ class Mixer:
         self.levels[ch] = np.clip(lin, 0.0, 2.0)
 
     def get_level(self, ch: int) -> float:
-        return self.levels[ch]
+        return float(self.levels[ch])
 
     def set_pan(self, ch: int, pan: float):
         self.pan[ch] = np.clip(pan, -1, 1)

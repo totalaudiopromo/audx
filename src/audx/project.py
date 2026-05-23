@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
@@ -105,6 +106,52 @@ class Project:
                 if 0 <= idx < len(audio.channel_gain):
                     audio.channel_gain[idx] = _gain_to_linear(float(ch.get("gain_db", 0.0)))
                     audio.channel_mute[idx] = bool(ch.get("mute", False))
+
+    def add_stem(
+        self,
+        project_path: Path,
+        source: Path,
+        channel: int,
+        name: str | None = None,
+        copy: bool = True,
+    ) -> str:
+        """Add an audio file to the project and create a playable channel pattern."""
+        project_dir = Path(project_path).parent
+        source = Path(source).expanduser()
+        if not source.exists():
+            raise FileNotFoundError(source)
+
+        stem_name = source.name
+        target = project_dir / "stems" / stem_name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if copy:
+            if source.resolve() != target.resolve():
+                shutil.copy2(source, target)
+        else:
+            target = source
+
+        rel_path = target.relative_to(project_dir).as_posix() if target.is_relative_to(project_dir) else str(target)
+        track_name = name or source.stem
+        mixer_row = {
+            "channel": channel,
+            "name": track_name,
+            "gain_db": 0.0,
+            "pan": 0.0,
+            "mute": False,
+            "solo": False,
+            "sample": rel_path,
+        }
+        self.mixer = [row for row in self.mixer if int(row.get("channel", -1)) != channel]
+        self.mixer.append(mixer_row)
+        pattern = {
+            "name": track_name,
+            "dsl": f'{track_name} "{rel_path}" [1] | channel {channel}',
+            "length_beats": 4,
+            "channel": channel,
+        }
+        self.patterns = [row for row in self.patterns if int(row.get("channel", -1)) != channel]
+        self.patterns.append(pattern)
+        return rel_path
 
 
 def _gain_to_linear(db: float) -> float:

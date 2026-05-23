@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pytest
+import soundfile as sf
 
 from audx.project import Project, diff_projects, init_project
 
@@ -36,6 +38,24 @@ def test_project_round_trip_preserves_finisher_and_slots(tmp_path: Path) -> None
     assert again.finisher["profile"] == "ukg"
     assert again.slots == {"A": [{"name": "kick", "dsl": "kick 4/4"}]}
     assert again.active_slot == "B"
+
+
+def test_project_add_stem_copies_audio_and_persists_channel(tmp_path: Path) -> None:
+    project_path = init_project("stems", parent=tmp_path, git=False)
+    source = tmp_path / "kick.wav"
+    sf.write(source, np.ones((128, 1), dtype=np.float32) * 0.25, 44100)
+
+    project = Project.load(project_path)
+    rel = project.add_stem(project_path, source, channel=3, name="kick")
+    project.save(project_path)
+
+    assert rel == "stems/kick.wav"
+    assert (project_path.parent / rel).exists()
+    reloaded = Project.load(project_path)
+    assert reloaded.mixer[0]["channel"] == 3
+    assert reloaded.mixer[0]["sample"] == "stems/kick.wav"
+    assert reloaded.patterns[0]["name"] == "kick"
+    assert reloaded.patterns[0]["dsl"] == 'kick "stems/kick.wav" [1] | channel 3'
 
 
 def test_diff_projects_reports_pattern_and_bpm_changes(tmp_path: Path) -> None:

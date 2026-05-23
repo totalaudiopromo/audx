@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import mido
 
@@ -62,7 +63,7 @@ class MidiClock:
         self.port_name = port_name
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
-        self.port: object | None = None
+        self.port: Any | None = None
 
     def start(self) -> None:
         ports = list_outputs()
@@ -73,7 +74,7 @@ class MidiClock:
         else:
             self.port = None
             return
-        self.port.send(mido.Message("start"))  # type: ignore[union-attr]
+        self.port.send(mido.Message("start"))
         self._stop.clear()
         self._thread = threading.Thread(target=self._tick, daemon=True, name="audx-midi-clock")
         self._thread.start()
@@ -84,8 +85,8 @@ class MidiClock:
             self._thread.join(timeout=2.0)
         if self.port is not None:
             try:
-                self.port.send(mido.Message("stop"))  # type: ignore[union-attr]
-                self.port.close()  # type: ignore[union-attr]
+                self.port.send(mido.Message("stop"))
+                self.port.close()
             except Exception:
                 pass
         self.port = None
@@ -97,7 +98,7 @@ class MidiClock:
         while not self._stop.is_set():
             try:
                 if self.port is not None:
-                    self.port.send(mido.Message("clock"))  # type: ignore[union-attr]
+                    self.port.send(mido.Message("clock"))
             except Exception:
                 return
             next_tick += interval

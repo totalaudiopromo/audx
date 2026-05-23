@@ -128,6 +128,42 @@ def test_web_serves_state_and_dashboard() -> None:
         httpd.shutdown()
 
 
+def test_web_serves_browser_app_and_project_audio(tmp_path: Path) -> None:
+    project_path = init_project("browser", parent=tmp_path, git=False)
+    sample_path = tmp_path / "kick.wav"
+    sample_path.write_bytes(b"fake-audio")
+    project = Project.load(project_path)
+    project.mixer = [{"channel": 0, "name": "kick", "sample": "stems/kick.wav"}]
+    project.patterns = [{"name": "kick", "dsl": 'kick "stems/kick.wav" [1] | channel 0'}]
+    (project_path.parent / "stems").mkdir(exist_ok=True)
+    (project_path.parent / "stems" / "kick.wav").write_bytes(b"fake-audio")
+    project.save(project_path)
+
+    import http.server
+
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), __import__("audx.web", fromlist=["_Handler"])._Handler)
+    port = httpd.server_address[1]
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/app?project={project_path}", timeout=1) as resp:
+            html = resp.read().decode()
+        assert "audx browser" in html
+        assert "AudioContext" in html
+        assert "gain_db" in html
+        assert "createStereoPanner" in html
+
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/project?path={project_path}", timeout=1) as resp:
+            payload = json.loads(resp.read().decode())
+        assert payload["name"] == "browser"
+        assert payload["patterns"][0]["name"] == "kick"
+
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/audio?path={project_path.parent / 'stems' / 'kick.wav'}", timeout=1) as resp:
+            assert resp.read() == b"fake-audio"
+    finally:
+        httpd.shutdown()
+
+
 def test_serve_function_signature() -> None:
     """Smoke: the public serve() takes host + port and returns None."""
     assert callable(serve)

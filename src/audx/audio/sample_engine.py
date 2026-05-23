@@ -3,6 +3,7 @@ Sample library management: indexing, tag search, playback voices.
 """
 import sqlite3
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import soundfile as sf
@@ -86,5 +87,6 @@ class SampleLibrary:
         if p in self._cache:
             return self._cache[p]
         data, _sr = sf.read(str(p), always_2d=True)  # always stereo for mixing
+        data = cast(np.ndarray, data)
         self._cache[p] = data
         return data

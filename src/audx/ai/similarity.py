@@ -4,7 +4,7 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple, cast
 
 import numpy as np
 
@@ -20,7 +20,7 @@ class Match:
     distance: float
 
 
-def _ensure_librosa():
+def _ensure_librosa() -> Any:
     try:
         import librosa
         return librosa
@@ -31,13 +31,13 @@ def _ensure_librosa():
 def chroma_embedding(y: np.ndarray, sr: int, n_fft: int = 2048, hop: int = 512) -> np.ndarray:
     librosa = _ensure_librosa()
     chroma = librosa.feature.chroma_stft(y=y, sr=sr, n_fft=n_fft, hop_length=hop)
-    return chroma.mean(axis=1)
+    return cast(np.ndarray, chroma.mean(axis=1))
 
 
 def mfcc_embedding(y: np.ndarray, sr: int, n_mfcc: int = 13) -> np.ndarray:
     librosa = _ensure_librosa()
     mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
-    return mfcc[:4].mean(axis=1)
+    return cast(np.ndarray, mfcc[:4].mean(axis=1))
 
 
 def compute_embedding(audio_path: Path) -> np.ndarray:
@@ -52,7 +52,7 @@ def compute_embedding(audio_path: Path) -> np.ndarray:
     m = mfcc_embedding(y, sr)
     vec = np.concatenate([c, m]).astype(np.float32)
     vec = vec / (np.linalg.norm(vec) + 1e-8)
-    return vec
+    return cast(np.ndarray, vec)
 
 
 def cosine_distance(a: np.ndarray, b: np.ndarray) -> float:

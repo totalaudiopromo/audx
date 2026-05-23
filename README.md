@@ -21,8 +21,10 @@ Now included as honest scaffolds: offline single-pattern rendering, plugin disco
 ```bash
 uv sync
 uv run audx doctor
-uv run audx pattern create main "kick 4/4"
-uv run audx launch
+uv run audx init my-loop --parent /tmp --no-git
+uv run audx load ~/Samples/kick.wav --ch 0 --project /tmp/my-loop/project.audx
+uv run audx render-project /tmp/my-loop/project.audx --output /tmp/my-loop/renders/my-loop.wav
+uv run audx open /tmp/my-loop/project.audx
 ```
 
 If you installed it as a tool/package, drop `uv run`:
@@ -39,7 +41,11 @@ audx init <name>                        # Scaffold project folder (stems/, rende
 audx open [project]                     # Open TUI on a project file or folder
 audx launch [project.audx]              # Same as `open`, legacy spelling
 audx pattern create <name> "<dsl>"      # Parse/check a pattern
+audx pattern set <ch> "<dsl>"           # Replace a channel's DSL line
+audx pattern step <ch> <n> [on|off]     # Toggle/set one step in a channel grid
 audx pattern list                       # List patterns in current process
+audx load sample.wav --ch 0 --project project.audx
+                                        # Copy audio into stems/ and bind to channel
 audx track add <name> "<dsl>" -c 2      # Add a track to the in-process engine
 audx track rm <name>                    # Remove a track
 audx mix set <ch> gain <dB>             # Set channel gain
@@ -49,6 +55,7 @@ audx samples index ~/Samples            # Index local samples
 audx stems index ~/Samples              # Alias matching spec §06
 audx stems search 909 kick              # Fuzzy-search the sample index
 audx render "kick 4/4" --sample k.wav   # Offline WAV render
+audx render-project project.audx        # Render a saved project to WAV
 audx render ... --stems                 # Per-track stems render
 audx render ... --variations 10         # Stochastic variations
 audx diff a.audx b.audx                 # Human-readable project diff
@@ -58,7 +65,7 @@ audx save beat.audx                     # Save current in-process state
 audx load beat.audx                     # Load and print project state
 audx projects list                      # List saved project files
 audx watch project.audx                 # Hot-reload .audx on save
-audx serve --port 8080                  # Read-only localhost dashboard
+audx serve --port 8080                  # Monitor dashboard + /app playable browser UI
 audx voice                              # Probe on-device voice control
 audx rec --calibrate                    # Measure round-trip latency
 audx export midi out.mid                # Export patterns to Standard MIDI File
@@ -120,6 +127,19 @@ The project file carries a `[finisher]` block that maps 1:1 to sadact-finisher
 CLI flags (`profile`, `platform`, `loudness`, `tone`, `energy`, `reference`,
 `use_stems`, `drums_up`, `bass_down`). `audx finish` uses these to drive the
 mastering pass.
+
+## Browser mode
+
+`audx serve` is still local-first. It serves a small browser UI from your own
+machine, with no cloud relay:
+
+```bash
+uv run audx serve --port 8080
+open http://127.0.0.1:8080/app?project=/tmp/my-loop/project.audx
+```
+
+The browser app reads the `.audx` project via localhost, plays patterns with
+Web Audio, and can load extra audio files directly in the browser session.
 
 ## Development
 

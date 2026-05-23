@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -158,12 +159,27 @@ def save(
 
 
 @app.command()
-def load(path: Path = typer.Argument(..., help="Project file path (.audx)")) -> None:
-    """Load a project and print its contents."""
-    project = _load_project(path)
-    typer.echo(f"Loaded '{project.name}'")
-    typer.echo(f"BPM: {project.bpm}")
-    typer.echo(f"Patterns: {', '.join(p['name'] for p in project.patterns) or 'none'}")
+def load(
+    path: Path = typer.Argument(..., help="Project .audx path or audio file to load"),
+    ch: int | None = typer.Option(None, "--ch", help="Load audio onto this project channel"),
+    project: Path = typer.Option(Path("project.audx"), "--project", "-p", help="Project file for audio loads"),
+    name: str | None = typer.Option(None, "--name", "-n", help="Track name for audio loads"),
+) -> None:
+    """Load a project, or load an audio file into a project channel."""
+    if ch is not None:
+        if not project.exists():
+            typer.echo(f"Project not found: {project}", err=True)
+            raise typer.Exit(1)
+        loaded_project = Project.load(project)
+        rel_path = loaded_project.add_stem(project, path, channel=ch, name=name)
+        loaded_project.save(project)
+        typer.echo(f"  ✓ loaded {rel_path} onto ch {ch} in {project}")
+        return
+
+    loaded = _load_project(path)
+    typer.echo(f"Loaded '{loaded.name}'")
+    typer.echo(f"BPM: {loaded.bpm}")
+    typer.echo(f"Patterns: {', '.join(p['name'] for p in loaded.patterns) or 'none'}")
 
 
 @app.command()
@@ -256,6 +272,94 @@ def pattern_delete(name: str) -> None:
     """Delete a pattern from the current process."""
     deleted = get_pattern_engine().remove_pattern(name)
     typer.echo(f"Deleted {name}" if deleted else f"Pattern not found: {name}")
+
+
+def _dsl_with_channel(dsl: str, channel: int) -> str:
+    if re.search(r"\|\s*(?:ch|channel)\s+", dsl):
+        return dsl
+    return f"{dsl} | channel {channel}"
+
+
+def _pattern_for_channel(channel: int) -> Pattern | None:
+    for name, pattern in get_pattern_engine().patterns.items():
+        if name == f"ch{channel}" or pattern.channel == channel or any(step.channel == channel for step in pattern.steps):
+            return pattern
+    return None
+
+
+def _source_for_pattern(pattern: Pattern) -> str:
+    if pattern.steps:
+        return pattern.steps[0].sample
+    if "[" in pattern.dsl:
+        source = pattern.dsl.split("[", 1)[0].split("|", 1)[0].strip()
+        if source:
+            parts = source.split()
+            return parts[-1] if parts else pattern.name
+    return pattern.name
+
+
+def _grid_from_pattern(pattern: Pattern, cells: int = 16) -> list[str]:
+    grid = ["0"] * cells
+    for step in pattern.steps:
+        index = round((step.beat % pattern.length_beats) / pattern.length_beats * cells)
+        if 0 <= index < cells:
+            grid[index] = "1"
+    return grid
+
+
+@pattern_app.command("set")
+def pattern_set(
+    channel: int = typer.Argument(..., help="Channel index"),
+    dsl: str = typer.Argument(..., help="Pattern DSL line"),
+) -> None:
+    """Replace a channel's DSL line (spec §06)."""
+    pattern = Pattern(name=f"ch{channel}", dsl=_dsl_with_channel(dsl, channel), length_beats=4, channel=channel)
+    try:
+        pattern.parse_dsl()
+    except Exception as exc:
+        typer.echo(f"DSL parse error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    get_pattern_engine().add_pattern(pattern)
+    typer.echo(f"  ✓ ch {channel} pattern set ({len(pattern.steps)} steps)")
+
+
+@pattern_app.command("step")
+def pattern_step(
+    channel: int = typer.Argument(..., help="Channel index"),
+    step: int = typer.Argument(..., help="1-based step number"),
+    state: str | None = typer.Argument(None, help="on | off; omitted toggles"),
+) -> None:
+    """Toggle or set a single step in a channel pattern (spec §06)."""
+    pattern = _pattern_for_channel(channel)
+    if pattern is None:
+        typer.echo(f"No pattern on ch {channel}. Use `audx pattern set {channel} \"kick [0000]\"` first.", err=True)
+        raise typer.Exit(1)
+    grid = _grid_from_pattern(pattern, cells=16)
+    if "[" in pattern.dsl and "]" in pattern.dsl:
+        inner = pattern.dsl.split("[", 1)[1].split("]", 1)[0]
+        cells = [char for char in inner if char in {"0", "1", ".", "x", "X", "-"}]
+        if cells:
+            grid = ["1" if char.lower() in {"1", "x"} else "0" for char in cells]
+
+    index = step - 1
+    if index < 0 or index >= len(grid):
+        typer.echo(f"Step {step} outside 1..{len(grid)}", err=True)
+        raise typer.Exit(1)
+
+    if state is None:
+        grid[index] = "0" if grid[index] == "1" else "1"
+    elif state.lower() in {"on", "1", "true", "yes"}:
+        grid[index] = "1"
+    elif state.lower() in {"off", "0", "false", "no"}:
+        grid[index] = "0"
+    else:
+        typer.echo("State must be on or off.", err=True)
+        raise typer.Exit(1)
+
+    source = _source_for_pattern(pattern)
+    pattern.dsl = _dsl_with_channel(f"{source} [{''.join(grid)}]", channel)
+    pattern.parse_dsl()
+    typer.echo(f"  ✓ ch {channel} step {step} {grid[index] == '1'}")
 
 
 # Backwards-compatible flat command names from the earlier sprint.
@@ -374,6 +478,24 @@ def render_pattern(
     arrangement.add(pattern, start_bar=0, bars=bars)
     path = render_arrangement(arrangement, library, output)
     typer.echo(f"Rendered {path}")
+
+
+@app.command("render-project")
+def render_project_command(
+    project: Path = typer.Argument(..., help="Project .audx file"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output WAV path"),
+    bars: int = typer.Option(4, "--bars", help="Number of bars to render"),
+) -> None:
+    """Render a saved .audx project to a stereo WAV."""
+    if not project.exists():
+        typer.echo(f"Project not found: {project}", err=True)
+        raise typer.Exit(1)
+    from audx.arrangement import render_project
+
+    loaded = Project.load(project)
+    target = output or project.parent / "renders" / f"{loaded.name}.wav"
+    path = render_project(project, target, bars=bars)
+    typer.echo(f"Rendered project to {path}")
 
 
 @app.command("diff")
@@ -812,10 +934,10 @@ def serve_command(
     host: str = typer.Option("127.0.0.1", "--host"),
     port: int = typer.Option(8080, "--port"),
 ) -> None:
-    """Serve the read-only localhost dashboard (spec §11)."""
+    """Serve the localhost monitor and playable browser UI (spec §11)."""
     from audx.web import serve
 
-    typer.echo(f"  ✓ audx dashboard on http://{host}:{port}/  (Ctrl-C to stop)")
+    typer.echo(f"  ✓ audx browser on http://{host}:{port}/app  (Ctrl-C to stop)")
     serve(host=host, port=port)
 
 

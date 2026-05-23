@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from audx.pattern import Pattern, get_pattern_engine
 from audx.project import Project
@@ -60,7 +60,7 @@ class AudxDaemonHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("content-length", "0"))
         if length <= 0:
             return {}
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+        return cast(dict[str, Any], json.loads(self.rfile.read(length).decode("utf-8")))
 
     def _json(self, payload: dict[str, Any], status: int = 200) -> None:
         body = json.dumps(payload).encode("utf-8")

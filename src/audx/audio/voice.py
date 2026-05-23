@@ -1,7 +1,6 @@
-"""
-A single polyphonic voice for sample playback.
-Handles pitch, gain, pan, and a simple ADSR envelope to avoid clicks.
-"""
+"""A single polyphonic voice for sample playback."""
+
+from typing import cast
 
 import numpy as np
 
@@ -42,7 +41,7 @@ class Voice:
         Returns interleaved float32 array [L,R,L,R,...].
         """
         if not self._enabled:
-            return np.zeros(frames * 2, dtype=np.float32)
+            return cast(np.ndarray, np.zeros(frames * 2, dtype=np.float32))
 
         # Determine output length
         remaining = len(self.sample) - int(self.pos)
@@ -56,7 +55,7 @@ class Voice:
                 orig_len = len(mono)
                 new_len = int(orig_len / self.frequency_shift)
                 indices = np.linspace(0, orig_len - 1, new_len)
-                mono = np.interp(indices, np.arange(orig_len), mono)[:frames]
+                mono = cast(np.ndarray, np.interp(indices, np.arange(orig_len), mono)[:frames])
                 available = len(mono)
             out = np.zeros(available * 2, dtype=np.float32)
             out[0::2] = mono * self.gain  # left
@@ -68,7 +67,7 @@ class Voice:
                 orig_len = len(seg)
                 new_len = int(orig_len / self.frequency_shift)
                 indices = np.linspace(0, orig_len - 1, new_len)
-                seg = np.array([np.interp(indices, np.arange(orig_len), seg[:, ch]) for ch in range(2)]).T
+                seg = cast(np.ndarray, np.array([np.interp(indices, np.arange(orig_len), seg[:, ch]) for ch in range(2)]).T)
                 available = len(seg)
             out = np.zeros(available * 2, dtype=np.float32)
             out[0::2] = seg[:, 0] * self.gain
@@ -91,10 +90,10 @@ class Voice:
         # If we consumed all frames but still need to fill, zero-pad
         if available < frames:
             pad = np.zeros((frames - available) * 2, dtype=np.float32)
-            out = np.concatenate([out, pad])
+            out = cast(np.ndarray, np.concatenate([out, pad]))
             self._enabled = False  # voice finished
 
-        return out
+        return cast(np.ndarray, out)
 
     def _compute_envelope(self, frames: int) -> np.ndarray:
         sr = self.sr
@@ -118,7 +117,7 @@ class Voice:
             if frames > release_samples:
                 self._enabled = False
 
-        return env
+        return cast(np.ndarray, env)
 
     @property
     def is_finished(self) -> bool:
