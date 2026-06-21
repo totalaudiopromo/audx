@@ -149,6 +149,32 @@ def build_synth_fixtures() -> list[dict]:
     return refs
 
 
+def build_push2_fixtures() -> dict:
+    """Capture the exact MIDI bytes push2.py emits, for the TS LED port."""
+    from audx.push2 import Push2Lights, push2_pad_layout
+
+    class _RecPort:
+        def __init__(self) -> None:
+            self.msgs: list[list[int]] = []
+
+        def send(self, msg: object) -> None:
+            self.msgs.append(list(msg.bytes()))  # type: ignore[attr-defined]
+
+    layout = push2_pad_layout()
+    port = _RecPort()
+    lights = Push2Lights(port)
+    lights.setup(layout)
+    setup_msgs = list(port.msgs)
+    port.msgs.clear()
+    lights.flash(36)  # strike the kick pad
+    flash_msgs = list(port.msgs)
+    return {
+        "layout": {str(note): voice for note, (voice, _ch, _rgb) in sorted(layout.items())},
+        "setup": setup_msgs,
+        "flash_kick": flash_msgs,
+    }
+
+
 def main() -> None:
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
     (FIXTURE_DIR / "dsl.json").write_text(
@@ -159,6 +185,9 @@ def main() -> None:
     )
     (FIXTURE_DIR / "synth.json").write_text(
         json.dumps(build_synth_fixtures()) + "\n"
+    )
+    (FIXTURE_DIR / "push2.json").write_text(
+        json.dumps(build_push2_fixtures(), indent=2) + "\n"
     )
     print(f"wrote fixtures to {FIXTURE_DIR}")
 

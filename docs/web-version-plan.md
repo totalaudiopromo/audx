@@ -86,9 +86,12 @@ with esbuild (`web/src/studio.ts` → `site/studio.js`); built in the Pages depl
 drift over 5 minutes.
 **M2.4 — Web UI.** Reuse the monochrome sequencer grid from `audx serve` /the promo:
 editable pattern, moving playhead, transport, mixer faders.
-**M2.5 — Web MIDI.** `navigator.requestMIDIAccess({ sysex: true })`. Controllers
-play voices; **Push 2 pad LEDs** port directly — the note + SysEx bytes from
-`audx/push2.py` are identical, so the kit lights up in-browser on Chrome/Edge.
+**M2.5 — Web MIDI.** ✅ *shipped.* `web/src/midi.ts` wires
+`navigator.requestMIDIAccess({ sysex: true })` into the studio: controller pads
+play voices and drive the sequencer's transport. **Push 2 pad LEDs** port directly —
+`web/src/push2.ts` regenerates the exact Ableton SysEx palette + note_on bytes from
+`audx/push2.py`, **golden-vector verified** (`web/tests/push2.test.ts`), so the kit
+lights up in-browser on Chrome/Edge. The sequencer flashes pads as it plays.
 
 ### Phase 3 — Parity & sharing *(incremental)*
 - **M3.1 Mixer** — per-track mute/solo/volume ✅ (in the studio). Pan still to do.

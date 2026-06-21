@@ -27,6 +27,8 @@
       background: var(--bg); color: var(--text); transition: all 0.12s ease;
     }
     .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn.on { border-color: var(--secondary); color: var(--secondary); }
+    .midi-status { color: var(--muted); font-size: 0.8rem; align-self: center; }
     #play {
       background: var(--primary); color: #1a1207; border-color: var(--primary);
       min-width: 92px;
@@ -121,6 +123,8 @@
       <button id="export" class="btn">copy as audx DSL</button>
       <button id="share" class="btn">share link</button>
       <button id="wav" class="btn">download wav</button>
+      <button id="midi" class="btn">connect MIDI / Push 2</button>
+      <span id="midi-status" class="midi-status"></span>
     </div>
     <pre id="dsl-out"></pre>
 
@@ -131,7 +135,9 @@
       <em>copy as audx DSL</em> gives you a pattern you can paste straight into
       <code>audx</code>. <em>share link</em> puts the whole groove in a URL to send
       to anyone; <em>download wav</em> renders it to a file. Your work autosaves in
-      this browser. Nothing is uploaded; it all runs on your machine.
+      this browser. <em>connect MIDI / Push 2</em> (Chrome/Edge) plays voices from a
+      controller's pads and lights up a Push 2 — the same LED bytes the CLI sends.
+      Nothing is uploaded; it all runs on your machine.
     </p>
   </main>
 

@@ -35,3 +35,19 @@ def test_swing_fixtures_current():
     assert committed == gen.build_swing_fixtures(), (
         "web/fixtures/swing.json is stale — run scripts/gen_web_fixtures.py"
     )
+
+
+def test_synth_fixtures_current():
+    gen = _load_generator()
+    committed = json.loads((FIXTURES / "synth.json").read_text())
+    assert committed == gen.build_synth_fixtures(), (
+        "web/fixtures/synth.json is stale — run scripts/gen_web_fixtures.py"
+    )
+
+
+def test_push2_fixtures_current():
+    gen = _load_generator()
+    committed = json.loads((FIXTURES / "push2.json").read_text())
+    assert committed == gen.build_push2_fixtures(), (
+        "web/fixtures/push2.json is stale — run scripts/gen_web_fixtures.py"
+    )

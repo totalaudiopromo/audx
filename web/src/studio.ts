@@ -10,6 +10,7 @@ import { SYNTH_VOICES, synthVoice, type Voice } from "./synth";
 import { STEPS, audibleTracks, type ProjectState, type Track } from "./types";
 import { decodeProject, encodeProject } from "./project";
 import { renderProject, toWav } from "./render";
+import { MidiBridge } from "./midi";
 
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
@@ -105,6 +106,20 @@ function voiceBuffer(voice: Voice): AudioBuffer {
 function secondsPerStep(): number {
   return 60.0 / state.bpm / 4.0; // 16th notes
 }
+
+/** Play a single voice one-shot now (pad clicks, MIDI pads). */
+function audition(voice: Voice): void {
+  if (!ctx) return;
+  const src = ctx.createBufferSource();
+  src.buffer = voiceBuffer(voice);
+  src.connect(master);
+  src.start();
+}
+
+const midi = new MidiBridge({
+  onPad: (voice) => { ensureAudio(); audition(voice as Voice); },
+  onTransport: (action) => { if (action === "play") play(); else stop(); },
+});
 
 function scheduleStep(step: number, time: number): void {
   const audible = audibleTracks(state.tracks);
@@ -209,13 +224,7 @@ grid.addEventListener("pointerdown", (e) => {
   painting = !track.steps[step];
   track.steps[step] = painting;
   cell.classList.toggle("on", painting);
-  if (painting && ctx) {
-    // audition the hit
-    const src = ctx.createBufferSource();
-    src.buffer = voiceBuffer(track.voice);
-    src.connect(master);
-    src.start();
-  }
+  if (painting) audition(track.voice); // audition the hit
 });
 grid.addEventListener("pointerover", (e) => {
   if (painting === null) return;
@@ -264,7 +273,12 @@ function animate(): void {
     const { step } = playQueue.shift()!;
     document.querySelectorAll(".cell.playhead").forEach((el) => el.classList.remove("playhead"));
     document.querySelectorAll(`.cell[data-step="${step}"]`).forEach((el) => el.classList.add("playhead"));
+    // light the Push 2 pads for voices that just fired
+    for (const track of audibleTracks(state.tracks)) {
+      if (track.steps[step]) midi.flashVoice(track.voice);
+    }
   }
+  midi.tick();
   // master meter
   if (analyser) {
     const buf = new Float32Array(analyser.fftSize);
@@ -337,6 +351,20 @@ function wireToolbar(): void {
     try { await navigator.clipboard.writeText(dsl); $("#export").textContent = "copied ✓"; }
     catch { $("#export").textContent = "copy as audx DSL"; }
     setTimeout(() => ($("#export").textContent = "copy as audx DSL"), 1600);
+  });
+
+  const midiBtn = $("#midi");
+  const midiStatus = $("#midi-status");
+  if (!midi.supported) { midiBtn.style.display = "none"; }
+  midiBtn.addEventListener("click", async () => {
+    ensureAudio();
+    midiStatus.textContent = "connecting…";
+    try {
+      midiStatus.textContent = await midi.connect();
+      midiBtn.classList.add("on");
+    } catch (err) {
+      midiStatus.textContent = err instanceof Error ? err.message : "MIDI failed";
+    }
   });
 
   document.addEventListener("keydown", (e) => {
