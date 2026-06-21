@@ -8,10 +8,9 @@ require the real-time backend.
 from pathlib import Path
 
 import numpy as np
+import pytest
 import soundfile as sf
 from typer.testing import CliRunner
-
-import pytest
 
 from audx.cli import app
 from audx.pattern import get_pattern_engine
