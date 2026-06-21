@@ -9,6 +9,9 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "src/audx/synth.py"
+      - "src/audx/pattern.py"
+      - "scripts/sync-web-modules.sh"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -29,6 +32,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Sync browser-playground modules from src/
+        run: bash scripts/sync-web-modules.sh
       - uses: actions/configure-pages@v5
       - name: Upload site/
         uses: actions/upload-pages-artifact@v3

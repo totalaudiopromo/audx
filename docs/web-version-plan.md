@@ -40,16 +40,53 @@ Re-implement the core in TypeScript against the Web Audio API:
 Best performance and one shared engine for native + web, but the largest effort.
 Revisit only if the TS engine hits perf limits.
 
-## Recommended phasing
+## Attack plan
 
-1. **Phase 1 — "Try it" (small).** Pyodide-backed page on the landing site: a DSL
-   box + "render" button that plays the result. Reuses Python as-is. High wow, low
-   risk. Lives at the same URL as the marketing site.
-2. **Phase 2 — Live core (medium).** Port synth + DSL + scheduler to TS + Web Audio;
-   wire the existing sequencer-grid UI; add Web MIDI (controllers + Push 2 LEDs).
-   This is the actual browser instrument.
-3. **Phase 3 — Parity.** Mixer, songs, project save/load (localStorage + share
-   links), sample upload via the File API.
+### ✅ Phase 1 — "Try it" in the browser  *(shipped)*
+A Pyodide-backed playground at **`/play.html`** on the landing site: a DSL editor +
+play button that runs the **real** `audx.pattern` parser and `audx.synth` kit in
+the browser (numpy via Pyodide), mixes to a stereo buffer and plays it through Web
+Audio. Presets, a WAV download, no server — nothing leaves the visitor's machine.
+
+- Code: `site/play.html`, `site/audx_web/webrender.py` (dual-imports the real
+  package in tests, flat modules in Pyodide).
+- No drift: `scripts/sync-web-modules.sh` copies `synth.py`/`pattern.py` into the
+  bundle; the Pages deploy runs it automatically and a test asserts the copies
+  equal `src/` (`tests/test_webrender.py`).
+- Reused real code, so the in-browser sound is identical to the CLI.
+
+### Phase 2 — The live instrument *(medium, ~1–2 weeks)*
+Goal: real-time play in the browser with the sequencer grid and a MIDI controller.
+
+**M2.1 — TS synth engine.** Port the ~20 voices to an `AudioWorklet` (or rendered
+buffers). *Acceptance:* a golden-vector test (generated from Python) confirms each
+TS voice matches the numpy one within tolerance.
+**M2.2 — DSL parser in TS.** Port `pattern.py` (pure string→steps). *Acceptance:*
+shared fixtures (DSL → expected steps JSON, emitted from the Python tests) pass on
+both sides.
+**M2.3 — Lookahead scheduler.** Web Audio sample-accurate clock (the standard
+25 ms-tick / 100 ms-lookahead pattern). *Acceptance:* steady timing at 124 BPM, no
+drift over 5 minutes.
+**M2.4 — Web UI.** Reuse the monochrome sequencer grid from `audx serve` /the promo:
+editable pattern, moving playhead, transport, mixer faders.
+**M2.5 — Web MIDI.** `navigator.requestMIDIAccess({ sysex: true })`. Controllers
+play voices; **Push 2 pad LEDs** port directly — the note + SysEx bytes from
+`audx/push2.py` are identical, so the kit lights up in-browser on Chrome/Edge.
+
+### Phase 3 — Parity & sharing *(incremental)*
+- **M3.1 Mixer** — per-channel gain/mute/pan (already modelled).
+- **M3.2 Songs** — port the `Song`/section model; render/arrange in-browser.
+- **M3.3 Projects** — save/load to `localStorage`; **share links** that encode a
+  project in the URL (no backend).
+- **M3.4 Your samples** — drag-and-drop via the File API; decode with Web Audio so
+  the synth fallback and real samples both work, matching the CLI's resolve order.
+- **M3.5 Export** — render-to-WAV (done in Phase 1) plus stems.
+
+### Sequencing & ownership
+Phase 2 is the real build and the natural next sprint. Do **M2.2 (DSL) and M2.1
+(synth) first** behind golden-vector tests — they're the fidelity-critical core and
+unblock everything else. M2.3–M2.5 are then mostly UI + plumbing on top. Phase 3
+items are independent and can land in any order once the engine exists.
 
 ## Keeping native and web honest
 

@@ -31,6 +31,10 @@ audx demo loop.wav
 
 <img src="docs/assets/audx-demo.gif" alt="audx demo session" width="640" />
 
+> **No install? Play it in your browser** — the real pattern language + synth kit run
+> client-side via Pyodide at [`/play.html`](site/play.html) on the landing page
+> (live once GitHub Pages is enabled).
+
 That writes a full multi-track beat — kick, sub, clap, hats, percussion — to
 `loop.wav` using the **built-in synth kit**. Open it and you're listening to
 audx. Then make your own:
