@@ -16,7 +16,7 @@ import { renderProject, renderSong, renderStems, toWav } from "./render";
 import { MidiBridge } from "./midi";
 import { getSample, hasSample, loadAllFromIDB, putSample, sampleStereo } from "./samples";
 import { makeZip } from "./zip";
-import { cliToSong, songToCli, type Scene, type Song } from "./song";
+import { cliToSong, songStepPlan, songToCli, type Scene, type Song } from "./song";
 
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
@@ -92,7 +92,9 @@ const buffers = new Map<Voice, AudioBuffer>();
 let currentStep = 0;
 let nextStepTime = 0;
 let timer: number | null = null;
-const playQueue: { step: number; time: number }[] = [];
+type SongEntry = { scene: Scene; localStep: number };
+let songPlan: SongEntry[] | null = null;
+const playQueue: { step: number; time: number; song?: SongEntry }[] = [];
 
 function ensureAudio(): AudioContext {
   if (ctx) return ctx;
@@ -148,11 +150,11 @@ const midi = new MidiBridge({
   onTransport: (action) => { if (action === "play") play(); else stop(); },
 });
 
-function scheduleStep(step: number, time: number): void {
-  const audible = audibleTracks(state.tracks);
-  const swingOffset = step % 2 === 1 ? secondsPerStep() * state.swing : 0;
-  for (const track of audible) {
-    const vel = track.steps[step] ?? 0;
+/** Schedule one 16th-step's hits for the given tracks at audio time `time`. */
+function scheduleHits(tracks: Track[], localStep: number, time: number, swing: number): void {
+  const swingOffset = localStep % 2 === 1 ? secondsPerStep() * swing : 0;
+  for (const track of audibleTracks(tracks)) {
+    const vel = track.steps[localStep] ?? 0;
     if (vel <= 0) continue;
     const src = ctx!.createBufferSource();
     src.buffer = bufferForTrack(track);
@@ -168,7 +170,22 @@ function scheduleStep(step: number, time: number): void {
     }
     src.start(time + swingOffset);
   }
-  playQueue.push({ step, time: time + swingOffset });
+}
+
+function scheduleStep(step: number, time: number): void {
+  if (songPlan) {
+    const entry = songPlan[step % songPlan.length];
+    scheduleHits(entry.scene.tracks, entry.localStep, time, entry.scene.swing);
+    playQueue.push({ step, time, song: entry });
+  } else {
+    scheduleHits(state.tracks, step, time, state.swing);
+    const swingOffset = step % 2 === 1 ? secondsPerStep() * state.swing : 0;
+    playQueue.push({ step, time: time + swingOffset });
+  }
+}
+
+function transportSteps(): number {
+  return songPlan ? songPlan.length : totalSteps();
 }
 
 function scheduler(): void {
@@ -176,7 +193,7 @@ function scheduler(): void {
   while (nextStepTime < ctx.currentTime + SCHEDULE_AHEAD) {
     scheduleStep(currentStep, nextStepTime);
     nextStepTime += secondsPerStep();
-    currentStep = (currentStep + 1) % totalSteps();
+    currentStep = (currentStep + 1) % transportSteps();
   }
 }
 
@@ -193,9 +210,12 @@ function play(): void {
 
 function stop(): void {
   state.playing = false;
+  songPlan = null;
   if (timer !== null) { clearInterval(timer); timer = null; }
   playQueue.length = 0;
   document.querySelectorAll(".cell.playhead").forEach((el) => el.classList.remove("playhead"));
+  document.querySelectorAll(".scene-chip.active").forEach((el) => el.classList.remove("active"));
+  $("#song-status").textContent = "";
   paintTransport();
 }
 
@@ -362,12 +382,19 @@ function animate(): void {
   if (!state.playing || !ctx) return;
   const now = ctx.currentTime;
   while (playQueue.length && playQueue[0].time <= now) {
-    const { step } = playQueue.shift()!;
+    const { step, song } = playQueue.shift()!;
     document.querySelectorAll(".cell.playhead").forEach((el) => el.classList.remove("playhead"));
-    document.querySelectorAll(`.cell[data-step="${step}"]`).forEach((el) => el.classList.add("playhead"));
-    // light the Push 2 pads for voices that just fired
-    for (const track of audibleTracks(state.tracks)) {
-      if (track.steps[step] > 0) midi.flashVoice(track.voice);
+    if (song) {
+      // song transport: show progress on the sequence, flash the active scene's hits
+      highlightActiveScene(song.scene, step);
+      for (const track of audibleTracks(song.scene.tracks)) {
+        if (track.steps[song.localStep] > 0) midi.flashVoice(track.voice);
+      }
+    } else {
+      document.querySelectorAll(`.cell[data-step="${step}"]`).forEach((el) => el.classList.add("playhead"));
+      for (const track of audibleTracks(state.tracks)) {
+        if (track.steps[step] > 0) midi.flashVoice(track.voice);
+      }
     }
   }
   midi.tick();
@@ -487,7 +514,24 @@ function download(bytes: Uint8Array, name: string, type: string): void {
 // ── song mode ──────────────────────────────────────────────────────────────────
 const SONG_KEY = "audx.studio.song";
 const song: Song = { bpm: 124, scenes: [], sequence: [] };
-let songSource: AudioBufferSourceNode | null = null;
+
+/** Live song transport feedback: light the active scene/sequence chip + readout. */
+function highlightActiveScene(scene: Scene, globalStep: number): void {
+  document.querySelectorAll(".scene-chip").forEach((el) =>
+    el.classList.toggle("active", (el as HTMLElement).dataset.scene === scene.name));
+  const bar = Math.floor(globalStep / BAR_STEPS);
+  const totalB = songPlan ? songPlan.length / BAR_STEPS : 0;
+  let acc = 0;
+  let seqIdx = -1;
+  for (let i = 0; i < song.sequence.length; i++) {
+    const b = song.scenes.find((s) => s.name === song.sequence[i])?.bars ?? 0;
+    if (bar < acc + b) { seqIdx = i; break; }
+    acc += b;
+  }
+  const seqChips = document.querySelectorAll("#seq-chips .seq-chip");
+  seqChips.forEach((el, i) => el.classList.toggle("active", i === seqIdx));
+  $("#song-status").textContent = `▶ ${scene.name} · bar ${bar + 1}/${totalB}`;
+}
 
 function persistSong(): void {
   try { localStorage.setItem(SONG_KEY, JSON.stringify(songToCli(song))); } catch { /* ignore */ }
@@ -509,6 +553,7 @@ function renderSongChips(): void {
   for (const scene of song.scenes) {
     const chip = document.createElement("button");
     chip.className = "scene-chip";
+    chip.dataset.scene = scene.name;
     chip.textContent = `${scene.name} · ${scene.bars}b`;
     chip.title = "click: add to sequence · shift-click: load into the grid";
     chip.onclick = (e) => {
@@ -549,21 +594,16 @@ function wireSong(): void {
     renderSongChips(); persistSong();
   });
 
-  const stopSong = (): void => { if (songSource) { try { songSource.stop(); } catch { /* */ } songSource = null; } };
   $("#song-play").addEventListener("click", () => {
     if (!song.sequence.length) { $("#song-status").textContent = "add scenes to the sequence first"; return; }
-    ensureAudio();
-    stopSong();
     song.bpm = state.bpm;
-    const r = renderSong(song, ctx!.sampleRate, sampleStereo);
-    const buf = ctx!.createBuffer(2, r.frames, r.sampleRate);
-    buf.getChannelData(0).set(r.left); buf.getChannelData(1).set(r.right);
-    songSource = ctx!.createBufferSource();
-    songSource.buffer = buf; songSource.connect(master); songSource.start();
-    $("#song-status").textContent = "playing song…";
-    songSource.onended = () => { $("#song-status").textContent = ""; };
+    const plan = songStepPlan(song);
+    if (!plan.length) return;
+    stop(); // stop any pattern playback first
+    songPlan = plan;
+    play(); // drives the live scheduler across the song timeline (loops)
   });
-  $("#song-stop").addEventListener("click", () => { stopSong(); $("#song-status").textContent = ""; });
+  $("#song-stop").addEventListener("click", () => stop());
 
   $("#song-wav").addEventListener("click", () => {
     if (!song.sequence.length) return;

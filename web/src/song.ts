@@ -40,6 +40,17 @@ export function timeline(song: Song): { scene: Scene; startBar: number }[] {
 export const totalBars = (song: Song): number =>
   song.sequence.reduce((n, name) => n + (song.scenes.find((s) => s.name === name)?.bars ?? 0), 0);
 
+/** Flatten a song into one entry per global 16th-step: which scene is playing and
+ *  the local step within it. Length = totalBars*16. Drives live song playback. */
+export function songStepPlan(song: Song): { scene: Scene; localStep: number }[] {
+  const plan: { scene: Scene; localStep: number }[] = [];
+  for (const { scene } of timeline(song)) {
+    const steps = scene.bars * BAR_STEPS;
+    for (let s = 0; s < steps; s++) plan.push({ scene, localStep: s });
+  }
+  return plan;
+}
+
 // ── DSL bridge ────────────────────────────────────────────────────────────────
 const ON_LEVELS = [VEL_GHOST, VEL_NORMAL, VEL_ACCENT];
 const nearestLevel = (v: number): number =>

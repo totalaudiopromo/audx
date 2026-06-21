@@ -117,6 +117,9 @@
     .scene-chip:hover { border-color: var(--primary); color: var(--primary); }
     .seq-chip { background: var(--bg); color: var(--secondary); }
     .seq-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .scene-chip.active, .seq-chip.active {
+      border-color: var(--primary); color: #1a1207; background: var(--primary); font-weight: 700;
+    }
     @media (max-width: 640px) {
       .row { grid-template-columns: 1fr; }
       .cell { min-height: 26px; }
@@ -162,7 +165,7 @@
         <div class="song-row"><span class="song-label">sequence:</span></div>
         <div id="seq-chips" class="chips-row"></div>
         <div class="song-row">
-          <button id="song-play" class="btn">▶ play song</button>
+          <button id="song-play" class="btn">▶ play song (live)</button>
           <button id="song-stop" class="btn">■ stop</button>
           <button id="song-wav" class="btn">download song wav</button>
           <button id="song-export" class="btn">export song JSON</button>

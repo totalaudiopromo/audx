@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { cliToSong, songToCli, timeline, totalBars, trackToDSL, type Song } from "../src/song";
+import { cliToSong, songStepPlan, songToCli, timeline, totalBars, trackToDSL, type Song } from "../src/song";
 import { renderSong } from "../src/render";
 import { VEL_NORMAL, type Track } from "../src/types";
 
@@ -62,6 +62,42 @@ describe("CLI Song JSON interop", () => {
     const steps = song.scenes[0].tracks[0].steps;
     expect(steps.length).toBe(32); // 2 bars tiled
     expect(steps.map((v, i) => (v > 0 ? i : -1)).filter((i) => i >= 0)).toEqual([0, 4, 8, 12, 16, 20, 24, 28]);
+  });
+});
+
+describe("songStepPlan (live transport)", () => {
+  it("maps each global step to the active scene + local step", () => {
+    const song: Song = {
+      bpm: 120,
+      scenes: [
+        { name: "a", bars: 1, swing: 0, tracks: [track("kick", [0])] },
+        { name: "b", bars: 3, swing: 0, tracks: [track("hh", [0])] },
+      ],
+      sequence: ["a", "b"],
+    };
+    const plan = songStepPlan(song);
+    expect(plan.length).toBe((1 + 3) * 16); // total bars * 16
+    // bar 0 (steps 0..15) → scene a, local 0..15
+    expect(plan[0]).toMatchObject({ localStep: 0 });
+    expect(plan[0].scene.name).toBe("a");
+    expect(plan[15]).toMatchObject({ localStep: 15 });
+    expect(plan[15].scene.name).toBe("a");
+    // steps 16..63 → scene b, local 0..47
+    expect(plan[16].scene.name).toBe("b");
+    expect(plan[16].localStep).toBe(0);
+    expect(plan[63].scene.name).toBe("b");
+    expect(plan[63].localStep).toBe(47);
+  });
+
+  it("repeats a scene that appears twice in the sequence", () => {
+    const song: Song = {
+      bpm: 120,
+      scenes: [{ name: "a", bars: 1, swing: 0, tracks: [track("kick", [0])] }],
+      sequence: ["a", "a"],
+    };
+    const plan = songStepPlan(song);
+    expect(plan.length).toBe(32);
+    expect(plan[16].localStep).toBe(0); // second pass restarts local step
   });
 });
 
