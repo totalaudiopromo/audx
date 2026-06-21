@@ -94,10 +94,14 @@ def run_jam(
     mode: str = "drums",
     voice: str = "keys",
     on_trigger: Callable[[int, str, int], None] | None = None,
+    pad_layout: dict[int, tuple[str, int, tuple[int, int, int]]] | None = None,
+    lights: object | None = None,
 ) -> None:
     """Open a MIDI input and trigger synth voices live until interrupted.
 
-    ``engine`` must be a started :class:`audx.engine.AudioEngine`. Raises
+    ``engine`` must be a started :class:`audx.engine.AudioEngine`. When a
+    ``pad_layout`` (e.g. a Push 2 kit) is given, notes in it use that voice/channel
+    and, if ``lights`` is provided, the struck pad is flashed. Raises
     ``RuntimeError`` if no MIDI input is available.
     """
     import mido
@@ -113,12 +117,20 @@ def run_jam(
         while True:
             for msg in port.iter_pending():
                 if msg.type == "note_on" and msg.velocity > 0:
-                    v, ch, tune = resolve_note(msg.note, mode=mode, voice=voice)
+                    if pad_layout is not None and msg.note in pad_layout:
+                        v, ch, _rgb = pad_layout[msg.note]
+                        tune = 0.0
+                    else:
+                        v, ch, tune = resolve_note(msg.note, mode=mode, voice=voice)
                     engine.play_synth(  # type: ignore[attr-defined]
                         v, ch, volume=msg.velocity / 127.0, tune_semitones=tune
                     )
+                    if lights is not None:
+                        lights.flash(msg.note)  # type: ignore[attr-defined]
                     if on_trigger:
                         on_trigger(msg.note, v, msg.velocity)
+            if lights is not None:
+                lights.tick()  # type: ignore[attr-defined]
             time.sleep(0.002)
     finally:
         port.close()

@@ -14,6 +14,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   General-MIDI notes to drum voices (and never leaves a pad silent); `--chromatic`
   plays a melodic voice across the keys. New `audx/live.py` mapping module + tests,
   and a guide at [docs/playing-live.md](docs/playing-live.md).
+- **Push 2 pad LEDs**: audx now lights the Push 2 pads — `audx jam` auto-detects a
+  Push 2, paints the drum kit (one colour per voice) and flashes each pad as it's
+  struck. `audx push2 lights` lights the kit on its own for a quick check.
+  Implemented to Ableton's Push 2 MIDI spec (SysEx colour palette + note-on LEDs).
+- Bundle the `python-rtmidi` MIDI backend so `midi`/`jam`/Push 2 work out of the box.
 - **Built-in synth kit** (`audx/synth.py`): 20 pure-numpy procedurally-synthesised
   voices with friendly aliases, per-voice tuning, velocity scaling and
   deterministic (seeded) output.

@@ -267,11 +267,13 @@ def jam(
     ),
     voice: str = typer.Option("keys", "--voice", help="Melodic voice for --chromatic mode"),
     bpm: float = typer.Option(124.0, "--bpm", help="Engine tempo"),
+    no_lights: bool = typer.Option(False, "--no-lights", help="Don't light Push 2 pads"),
 ) -> None:
     """Play the synth kit live from a MIDI controller or Push 2 — instant sound.
 
-    Drum pads trigger drums (GM note map; every pad makes a sound). Use
-    ``--chromatic`` to play a melodic voice across a keyboard:
+    Drum pads trigger drums (GM note map; every pad makes a sound). On a Push 2 the
+    pads light up to show the kit and flash when you hit them. Use ``--chromatic``
+    to play a melodic voice across a keyboard:
 
         audx jam                      # drum pads → kick/snare/hat/...
         audx jam --chromatic          # keyboard plays the 'keys' voice
@@ -279,12 +281,16 @@ def jam(
     """
     from audx.live import run_jam
     from audx.midi import list_inputs
+    from audx.push2 import open_push2_lights, push2_input_name, push2_pad_layout
 
     inputs = list_inputs()
     if not inputs:
         typer.echo("No MIDI inputs found. Plug in a controller (or run `audx midi list`).", err=True)
         raise typer.Exit(1)
-    typer.echo(f"  MIDI in: {port or inputs[0]}")
+
+    # Prefer a Push 2 input if one is present and the user didn't pick a port.
+    in_port = port or push2_input_name() or inputs[0]
+    typer.echo(f"  MIDI in: {in_port}")
 
     engine = init_engine()
     engine.set_bpm(bpm)
@@ -293,6 +299,16 @@ def jam(
     except RuntimeError as exc:
         typer.echo(f"  ✗ {exc}", err=True)
         raise typer.Exit(1) from exc
+
+    # Light the Push 2 kit (drums mode only — chromatic doesn't map to the kit).
+    lights = None
+    pad_layout = None
+    if not chromatic and not no_lights:
+        lights = open_push2_lights()
+        if lights is not None:
+            pad_layout = push2_pad_layout()
+            lights.setup(pad_layout)
+            typer.echo("  ✓ Push 2 pads lit — hit them!")
 
     mode = "chromatic" if chromatic else "drums"
     typer.echo(
@@ -305,10 +321,20 @@ def jam(
         typer.echo(f"    {note:>3} → {v:<8} {bar}")
 
     try:
-        run_jam(engine, port_name=port or None, mode=mode, voice=voice, on_trigger=_feedback)
+        run_jam(
+            engine,
+            port_name=in_port,
+            mode=mode,
+            voice=voice,
+            on_trigger=_feedback,
+            pad_layout=pad_layout,
+            lights=lights,
+        )
     except KeyboardInterrupt:
         pass
     finally:
+        if lights is not None:
+            lights.close()
         engine.stop()
         typer.echo("\n  stopped.")
 
@@ -742,6 +768,28 @@ def push2_map() -> None:
 
     for control in list_push2_map():
         typer.echo(f"{control.name}\t{control.midi_type}\t{control.number}\t{control.description}")
+
+
+@push2_app.command("lights")
+def push2_lights() -> None:
+    """Light up the Push 2 drum kit (no audio) — a quick LED check."""
+    import time
+
+    from audx.push2 import open_push2_lights, push2_pad_layout
+
+    lights = open_push2_lights()
+    if lights is None:
+        typer.echo("No Push 2 output found. Connect it and check `audx midi list`.", err=True)
+        raise typer.Exit(1)
+    layout = push2_pad_layout()
+    lights.setup(layout)
+    typer.echo(f"  ✓ lit {len(layout)} pads. Ctrl-C to clear.")
+    try:
+        while True:
+            time.sleep(0.2)
+    except KeyboardInterrupt:
+        lights.close()
+        typer.echo("\n  cleared.")
 
 
 @heartmula_app.command("status")

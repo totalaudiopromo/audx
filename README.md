@@ -61,7 +61,7 @@ audx is a real instrument you play from the terminal:
 ## What it isn't (yet)
 
 Honest scaffolding, on the roadmap: true plugin **hosting** (discovery works
-today), a full arrangement editor, Push 2 LED/display integration, a
+today), the Push 2 **screen** (pad **LEDs** work — see `audx jam`), a
 production-grade shared audio daemon, and on-device voice control. These print
 clear "not wired up yet" messages rather than pretending.
 
@@ -173,7 +173,7 @@ Full walkthrough (kids included): [docs/playing-live.md](docs/playing-live.md).
 | **Slots & macros** | `slot set\|next\|list` · `macro record\|replay\|list` |
 | **MIDI** | `export midi` · `midi out\|rec\|list` |
 | **AI (optional extras)** | `ai pattern\|similar\|tag\|groove\|key` |
-| **Bridges** | `plugins scan` · `push2 map` · `heartmula` · `sadact` · `daemon` |
+| **Bridges** | `plugins scan` · `push2 map\|lights` · `heartmula` · `sadact` · `daemon` |
 | **Live dashboard** | `serve` |
 | **Diagnostics** | `doctor` · `version` |
 

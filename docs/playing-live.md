@@ -85,22 +85,32 @@ Melodic voices: `bass`, `pluck`, `stab`, `keys`, `saw`, `sine`
 
 ## 4. Push 2 notes
 
-Push 2 works as a standard MIDI controller over USB:
+Push 2 works as a standard MIDI controller over USB — **and audx lights its pads.**
 
-1. Plug it in (USB). For the pads alone, bus power is fine; the display/LEDs and
-   full features want Push 2's power supply.
-2. `audx midi list` — it usually appears as **"Ableton Push 2"** (there are two
-   ports; the **"Live Port"** / first one is what you want).
+1. Plug it in (USB). For pads + LEDs, bus power is fine; the screen wants Push 2's
+   power supply.
+2. Quick LED check (no audio needed):
+   ```bash
+   audx push2 lights        # lights the drum kit on the pads; Ctrl-C to clear
+   ```
+   You should see the bottom two rows light up — one colour per drum.
 3. Play it:
    ```bash
-   audx jam --port "Push 2"
+   audx jam                 # auto-detects Push 2, lights the kit, flashes on hit
    ```
-4. The 8×8 pad grid is fully playable in drums mode — every pad triggers a voice.
-   Try `--chromatic` and the grid becomes a pitched instrument.
+   audx finds the Push 2 automatically (you don't need `--port`). Each pad in the
+   bottom two rows is a drum, lit in its own colour; hitting a pad flashes it white.
+4. The whole 8×8 grid still plays in drums mode (unlit pads make sound too). Try
+   `--chromatic` to turn the grid into a pitched instrument (lights stay off in
+   chromatic mode). Disable lights with `audx jam --no-lights`.
 
-> Heads up: audx doesn't drive Push 2's **LEDs or screen** yet (that's on the
-> roadmap). The pads *play sound* — they just won't light up from audx. To send
-> Push 2 a tempo clock from audx: `audx midi out "Push 2" --bpm 120`.
+**Pad colours** (bottom row, left→right): kick · snare · clap · hh · oh · rim · tom,
+then cowbell · sub · ride · crash · shaker on the next row up.
+
+> Notes: audx drives the pad **LEDs**; the Push 2 **screen** is still on the
+> roadmap. If lights don't appear, make sure no other app (Ableton/Live) has
+> grabbed the Push 2 — pick its **User** port. Send Push 2 a tempo clock with
+> `audx midi out "Push 2" --bpm 120`.
 
 ---
 
