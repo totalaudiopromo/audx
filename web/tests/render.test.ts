@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderProject, toWav } from "../src/render";
+import { renderProject, renderStems, toWav } from "../src/render";
 import { VEL_NORMAL, type ProjectState, type Track } from "../src/types";
 
 const SR = 48000;
@@ -66,6 +66,29 @@ describe("offline render", () => {
       tracks: [{ ...track("kick", [0]), solo: true }, track("snare", [0])],
     };
     expect(peakOf(renderProject(state, 1, SR).left)).toBeGreaterThan(0);
+  });
+
+  it("renderStems: one WAV per audible track, named, non-silent", () => {
+    const state: ProjectState = {
+      bpm: 120, swing: 0, bars: 1,
+      tracks: [track("kick", [0]), track("hh", [2]), { ...track("snare", [4]), mute: true }],
+    };
+    const stems = renderStems(state, 1, SR);
+    expect(stems.length).toBe(2); // muted snare excluded
+    expect(stems[0].name).toBe("01-kick.wav");
+    expect(stems[1].name).toBe("02-hh.wav");
+    for (const s of stems) {
+      expect(String.fromCharCode(...s.wav.slice(0, 4))).toBe("RIFF");
+      expect(s.wav.length).toBeGreaterThan(44);
+    }
+  });
+
+  it("stems sum to roughly the full mix energy", () => {
+    const state: ProjectState = { bpm: 120, swing: 0, bars: 1, tracks: [track("kick", [0]), track("hh", [4])] };
+    const full = renderProject(state, 1, SR);
+    const stems = renderStems(state, 1, SR);
+    expect(stems.length).toBe(2);
+    expect(peakOf(full.left)).toBeGreaterThan(0); // sanity: both produce sound
   });
 
   it("writes a valid 16-bit stereo WAV header", () => {

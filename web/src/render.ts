@@ -5,7 +5,7 @@
  * the file matches what you hear.
  */
 import { synthVoice, type Voice } from "./synth";
-import { BAR_STEPS, audibleTracks, panGains, type ProjectState } from "./types";
+import { BAR_STEPS, audibleTracks, panGains, type ProjectState, type Track } from "./types";
 
 export interface RenderResult {
   left: Float32Array;
@@ -17,64 +17,105 @@ export interface RenderResult {
 /** Resolves a track's loaded sample to stereo channels, or null for synth. */
 export type SampleProvider = (ref: string) => { left: Float32Array; right: Float32Array } | null;
 
-/** Render `loops` full repeats of the session to a normalized stereo buffer. */
-export function renderProject(
-  state: ProjectState, loops = 2, sampleRate = 48000, sampleProvider?: SampleProvider
-): RenderResult {
-  const spb = 60.0 / Math.max(20, state.bpm) / 4.0; // seconds per 16th step
+interface Timing {
+  spb: number; // seconds per 16th step
+  totalSteps: number;
+  stepsPerLoop: number;
+  frames: number;
+}
+function timing(state: ProjectState, loops: number, sampleRate: number): Timing {
+  const spb = 60.0 / Math.max(20, state.bpm) / 4.0;
   const totalSteps = loops * state.bars * BAR_STEPS;
-  const frames = Math.ceil((totalSteps * spb + 1.0) * sampleRate); // +1s tail
-  const left = new Float32Array(frames);
-  const right = new Float32Array(frames);
+  return { spb, totalSteps, stepsPerLoop: state.bars * BAR_STEPS, frames: Math.ceil((totalSteps * spb + 1.0) * sampleRate) };
+}
 
+function makeVoiceCache(sampleRate: number): (v: Voice) => Float32Array {
   const cache = new Map<Voice, Float32Array>();
-  const voiceBuf = (v: Voice): Float32Array => {
+  return (v) => {
     let b = cache.get(v);
     if (!b) { b = synthVoice(v, sampleRate); cache.set(v, b); }
     return b;
   };
+}
 
-  const audible = audibleTracks(state.tracks);
-  const stepsPerLoop = state.bars * BAR_STEPS;
-  for (let s = 0; s < totalSteps; s++) {
-    const step = s % stepsPerLoop;
-    const swing = step % 2 === 1 ? spb * state.swing : 0;
-    const start = Math.round((s * spb + swing) * sampleRate);
-    for (const track of audible) {
-      const vel = track.steps[step] ?? 0;
-      if (vel <= 0) continue;
-      const [lg, rg] = panGains(track.pan);
-      const g = track.gain * vel;
-      // a loaded sample wins; else the built-in synth voice (CLI precedence)
-      const sample = track.sampleRef && sampleProvider ? sampleProvider(track.sampleRef) : null;
-      if (sample) {
-        const len = sample.left.length;
-        const end = Math.min(start + len, frames);
-        for (let i = start, j = 0; i < end; i++, j++) {
-          left[i] += sample.left[j] * g * lg;
-          right[i] += sample.right[j] * g * rg;
-        }
-      } else {
-        const buf = voiceBuf(track.voice);
-        const end = Math.min(start + buf.length, frames);
-        for (let i = start, j = 0; i < end; i++, j++) {
-          const v = buf[j] * g;
-          left[i] += v * lg;
-          right[i] += v * rg;
-        }
+/** Add one track's hits into the given stereo buffers (no normalize). */
+function placeTrack(
+  track: Track, state: ProjectState, t: Timing, sampleRate: number,
+  left: Float32Array, right: Float32Array,
+  voiceBuf: (v: Voice) => Float32Array, sampleProvider?: SampleProvider,
+): void {
+  const [lg, rg] = panGains(track.pan);
+  // a loaded sample wins; else the built-in synth voice (CLI precedence)
+  const sample = track.sampleRef && sampleProvider ? sampleProvider(track.sampleRef) : null;
+  for (let s = 0; s < t.totalSteps; s++) {
+    const step = s % t.stepsPerLoop;
+    const vel = track.steps[step] ?? 0;
+    if (vel <= 0) continue;
+    const swing = step % 2 === 1 ? t.spb * state.swing : 0;
+    const start = Math.round((s * t.spb + swing) * sampleRate);
+    const g = track.gain * vel;
+    if (sample) {
+      const end = Math.min(start + sample.left.length, t.frames);
+      for (let i = start, j = 0; i < end; i++, j++) {
+        left[i] += sample.left[j] * g * lg;
+        right[i] += sample.right[j] * g * rg;
+      }
+    } else {
+      const buf = voiceBuf(track.voice);
+      const end = Math.min(start + buf.length, t.frames);
+      for (let i = start, j = 0; i < end; i++, j++) {
+        const v = buf[j] * g;
+        left[i] += v * lg;
+        right[i] += v * rg;
       }
     }
   }
+}
 
+function normalize(left: Float32Array, right: Float32Array, frames: number): void {
   let peak = 0;
-  for (let i = 0; i < frames; i++) {
-    peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
-  }
+  for (let i = 0; i < frames; i++) peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
   if (peak > 1.0) {
     const inv = 1.0 / peak;
     for (let i = 0; i < frames; i++) { left[i] *= inv; right[i] *= inv; }
   }
-  return { left, right, frames, sampleRate };
+}
+
+/** Render `loops` full repeats of the session to a normalized stereo buffer. */
+export function renderProject(
+  state: ProjectState, loops = 2, sampleRate = 48000, sampleProvider?: SampleProvider
+): RenderResult {
+  const t = timing(state, loops, sampleRate);
+  const left = new Float32Array(t.frames);
+  const right = new Float32Array(t.frames);
+  const voiceBuf = makeVoiceCache(sampleRate);
+  for (const track of audibleTracks(state.tracks)) {
+    placeTrack(track, state, t, sampleRate, left, right, voiceBuf, sampleProvider);
+  }
+  normalize(left, right, t.frames);
+  return { left, right, frames: t.frames, sampleRate };
+}
+
+export interface Stem { name: string; wav: Uint8Array; }
+
+/** Render each audible track to its own normalized WAV (like `audx render --stems`). */
+export function renderStems(
+  state: ProjectState, loops = 2, sampleRate = 48000, sampleProvider?: SampleProvider
+): Stem[] {
+  const t = timing(state, loops, sampleRate);
+  const voiceBuf = makeVoiceCache(sampleRate);
+  const safe = (s: string) => s.replace(/[^a-z0-9._-]+/gi, "_");
+  return audibleTracks(state.tracks).map((track, i) => {
+    const left = new Float32Array(t.frames);
+    const right = new Float32Array(t.frames);
+    placeTrack(track, state, t, sampleRate, left, right, voiceBuf, sampleProvider);
+    normalize(left, right, t.frames);
+    const label = track.sampleName ? track.sampleName.replace(/\.[^.]+$/, "") : track.voice;
+    return {
+      name: `${String(i + 1).padStart(2, "0")}-${safe(label)}.wav`,
+      wav: toWav({ left, right, frames: t.frames, sampleRate }),
+    };
+  });
 }
 
 /** Encode a stereo render as a 16-bit PCM WAV. */

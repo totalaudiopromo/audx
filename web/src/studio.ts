@@ -12,9 +12,10 @@ import {
   audibleTracks, resizeSteps, type ProjectState, type Track,
 } from "./types";
 import { decodeProject, encodeProject } from "./project";
-import { renderProject, toWav } from "./render";
+import { renderProject, renderStems, toWav } from "./render";
 import { MidiBridge } from "./midi";
 import { getSample, hasSample, loadAllFromIDB, putSample, sampleStereo } from "./samples";
+import { makeZip } from "./zip";
 
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
@@ -431,13 +432,23 @@ function wireToolbar(): void {
     setTimeout(() => ($("#share").textContent = "share link"), 1600);
   });
 
+  const download = (bytes: Uint8Array, name: string, type: string): void => {
+    const url = URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer], { type }));
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   $("#wav").addEventListener("click", () => {
     ensureAudio();
-    const wav = toWav(renderProject(snapshot(), 2, ctx!.sampleRate, sampleStereo));
-    const url = URL.createObjectURL(new Blob([wav.buffer as ArrayBuffer], { type: "audio/wav" }));
-    const a = document.createElement("a");
-    a.href = url; a.download = "audx-studio.wav"; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    download(toWav(renderProject(snapshot(), 2, ctx!.sampleRate, sampleStereo)), "audx-studio.wav", "audio/wav");
+  });
+
+  $("#stems").addEventListener("click", () => {
+    ensureAudio();
+    const stems = renderStems(snapshot(), 2, ctx!.sampleRate, sampleStereo);
+    if (!stems.length) return;
+    download(makeZip(stems.map((s) => ({ name: s.name, data: s.wav }))), "audx-stems.zip", "application/zip");
   });
 
   $("#export").addEventListener("click", async () => {

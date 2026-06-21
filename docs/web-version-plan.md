@@ -108,9 +108,10 @@ lights up in-browser on Chrome/Edge. The sequencer flashes pads as it plays.
   link on another machine falls back to the synth. v3 project encoding; render takes a
   sample provider. Logic tested (`types`/`project`/`render` tests); decode + IndexedDB
   are browser-only (manual QA).
-- **M3.5 Export** — ✅ *shipped:* offline render-to-WAV from the studio
-  (`web/src/render.ts`, tested) reusing the native synth + scheduler timing. Stems
-  still to do.
+- **M3.5 Export** — ✅ *shipped:* offline render-to-WAV **and per-track stems**
+  (`renderStems` → one normalized WAV per audible track, bundled with a dependency-
+  free store-only ZIP writer `web/src/zip.ts`). Reuses the native synth + scheduler
+  timing; honours samples/velocity/pan/multi-bar. Tested (render + CRC32/zip).
 
 ### Sequencing & ownership
 Phase 2 is the real build and the natural next sprint. Do **M2.2 (DSL) and M2.1
