@@ -11,6 +11,7 @@ import soundfile as sf
 
 from audx.pattern import Pattern
 from audx.sampler import SampleLibrary
+from audx.synth import is_synth_voice, synth_voice
 
 
 @dataclass
@@ -56,19 +57,13 @@ def render_arrangement(
     total_beats = max(4, arrangement.total_bars * 4)
     total_frames = math.ceil(total_beats * seconds_per_beat * sample_rate)
     mix = np.zeros((total_frames, 2), dtype=np.float32)
+    synth_cache: dict[str, np.ndarray] = {}
 
     for clip in arrangement.clips:
         for step in clip.pattern.steps:
-            sample_path = sample_library.resolve(step.sample)
-            if sample_path is None or not sample_path.exists():
+            data = _voice_audio(step, sample_library, sample_rate, synth_cache)
+            if data is None:
                 continue
-            data, source_sr = sf.read(str(sample_path), dtype="float32", always_2d=True)
-            if source_sr != sample_rate:
-                data = _resample_linear(data, source_sr, sample_rate)
-            if data.shape[1] == 1:
-                data = np.repeat(data, 2, axis=1)
-            else:
-                data = data[:, :2]
             for bar in range(clip.start_bar, clip.start_bar + clip.bars):
                 beat = bar * 4 + clip.pattern.swung_beat(step.beat)
                 start = round(beat * seconds_per_beat * sample_rate)
@@ -84,6 +79,38 @@ def render_arrangement(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(output_path), mix, sample_rate)
     return output_path
+
+
+def _voice_audio(
+    step: object,
+    sample_library: SampleLibrary,
+    sample_rate: int,
+    synth_cache: dict[str, np.ndarray],
+) -> np.ndarray | None:
+    """Resolve a step to stereo ``float32`` audio: real sample, else built-in synth.
+
+    Returns ``None`` when the instrument is neither a known sample nor a synth
+    voice, so the renderer can skip it without crashing.
+    """
+    name = step.sample  # type: ignore[attr-defined]
+    tune = getattr(step, "tune_semitones", 0.0)
+    sample_path = sample_library.resolve(name)
+    if sample_path is not None and sample_path.exists():
+        data, source_sr = sf.read(str(sample_path), dtype="float32", always_2d=True)
+        if source_sr != sample_rate:
+            data = _resample_linear(data, source_sr, sample_rate)
+        if data.shape[1] == 1:
+            return np.repeat(data, 2, axis=1)
+        return data[:, :2]
+    if is_synth_voice(name):
+        key = f"{name}:{tune}"
+        cached = synth_cache.get(key)
+        if cached is None:
+            mono = synth_voice(name, sample_rate, tune_semitones=tune)
+            cached = np.repeat(mono.reshape(-1, 1), 2, axis=1)
+            synth_cache[key] = cached
+        return cached
+    return None
 
 
 def _resample_linear(data: np.ndarray, source_sr: int, target_sr: int) -> np.ndarray:

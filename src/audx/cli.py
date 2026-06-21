@@ -221,6 +221,55 @@ def doctor() -> None:
     typer.echo(f"Config dir: {CONFIG_DIR}")
 
 
+@app.command()
+def demo(
+    output: Path = typer.Argument(Path("audx-demo.wav"), help="Output WAV path"),
+    bpm: float = typer.Option(124.0, "--bpm", help="Tempo"),
+    bars: int = typer.Option(4, "--bars", help="Length in bars"),
+) -> None:
+    """Render a full demo beat with the built-in synth kit — zero setup required.
+
+    No samples, no audio device, no config. Proves audx makes music in one command:
+
+        audx demo loop.wav && open loop.wav
+    """
+    from audx.arrangement import Arrangement, render_arrangement
+
+    tracks = [
+        ("kick", "kick 4/4 | channel 0"),
+        ("sub", "sub e(3,8) | channel 1 | vel 0.9 | tune -5st"),
+        ("clap", "clap 2/8 | channel 2 | vel 0.85"),
+        ("hats", "hh 16x8 | channel 3 | vel 0.5 | swing 12% | humanize 6%"),
+        ("openhat", "oh [0.0.1.0.0.0.1.0] | channel 4 | vel 0.4"),
+        ("perc", "perc e(5,16,2) | channel 5 | vel 0.55"),
+    ]
+    arrangement = Arrangement(bpm=bpm)
+    for name, dsl in tracks:
+        pattern = Pattern(name=name, dsl=dsl)
+        pattern.parse_dsl()
+        arrangement.add(pattern, start_bar=0, bars=bars)
+
+    library = SampleLibrary(SAMPLES_DIR)  # empty/missing → synth kit fallback
+    typer.echo("  audx · demo")
+    for name, dsl in tracks:
+        typer.echo(f"    ♪ {name:<8} {dsl}")
+    path = render_arrangement(arrangement, library, output)
+    typer.echo(f"  ✓ rendered {bars} bars @ {bpm:g} BPM → {path}")
+
+
+@app.command()
+def synths() -> None:
+    """List the built-in synth voices (usable in any pattern, no samples needed)."""
+    from audx.synth import VOICE_ALIASES, list_voices
+
+    typer.echo("Built-in synth voices:")
+    for voice in list_voices():
+        aliases = sorted(a for a, target in VOICE_ALIASES.items() if target == voice and a.strip())
+        suffix = f"  (aka {', '.join(aliases)})" if aliases else ""
+        typer.echo(f"  · {voice}{suffix}")
+    typer.echo("\nUse any of these as an instrument, e.g.  audx render \"cowbell e(5,8)\"")
+
+
 @pattern_app.command("create")
 def pattern_create(
     name: str = typer.Argument(..., help="Pattern name"),
@@ -326,7 +375,9 @@ def projects_list_flat() -> None:
 def render_pattern(
     dsl: str = typer.Argument(..., help="Pattern DSL to render"),
     output: Path = typer.Option(Path("render.wav"), "--output", "-o", help="Output WAV path"),
-    sample: Path = typer.Option(..., "--sample", help="Sample file to trigger"),
+    sample: Path | None = typer.Option(
+        None, "--sample", help="Sample file to trigger (omit to use the built-in synth kit)"
+    ),
     bpm: float = typer.Option(128.0, "--bpm", help="BPM"),
     bars: int = typer.Option(4, "--bars", help="Number of bars"),
     stems: bool = typer.Option(False, "--stems", help="Render each pattern to its own WAV"),
@@ -334,13 +385,20 @@ def render_pattern(
 ) -> None:
     """Render a single pattern to WAV offline.
 
-    With ``--variations N`` renders N copies suffixed ``_v01.wav``..``_vNN.wav``.
-    With ``--stems`` writes one file per active in-process pattern.
+    With no ``--sample`` the built-in synth kit is used, so ``audx render "kick 4/4"``
+    makes sound with zero setup. With ``--variations N`` renders N copies suffixed
+    ``_v01.wav``..``_vNN.wav``. With ``--stems`` writes one file per active pattern.
     """
     from audx.arrangement import Arrangement, render_arrangement
 
-    library = SampleLibrary(sample.parent)
-    library.build_index(recursive=False)
+    if sample is not None:
+        library = SampleLibrary(sample.parent)
+        library.build_index(recursive=False)
+        name = sample.stem
+    else:
+        # No sample: empty library so the renderer falls back to the synth kit.
+        library = SampleLibrary(SAMPLES_DIR)
+        name = dsl.split()[0] if dsl.split() else "kick"
 
     if stems:
         engine = get_pattern_engine()
@@ -359,7 +417,7 @@ def render_pattern(
 
     if variations and variations > 0:
         for i in range(1, variations + 1):
-            pat = Pattern(name=sample.stem, dsl=dsl)
+            pat = Pattern(name=name, dsl=dsl)
             pat.parse_dsl()
             arrangement = Arrangement(bpm=bpm)
             arrangement.add(pat, start_bar=0, bars=bars)
@@ -368,7 +426,7 @@ def render_pattern(
             typer.echo(f"  ✓ {target}")
         return
 
-    pattern = Pattern(name=sample.stem, dsl=dsl)
+    pattern = Pattern(name=name, dsl=dsl)
     pattern.parse_dsl()
     arrangement = Arrangement(bpm=bpm)
     arrangement.add(pattern, start_bar=0, bars=bars)

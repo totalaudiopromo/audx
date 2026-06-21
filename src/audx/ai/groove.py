@@ -29,10 +29,10 @@ def extract_groove(path: Path, steps: int = 16) -> GrooveProfile | None:
     if y.ndim > 1:
         y = y.mean(axis=1)
 
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
+    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)  # type: ignore[attr-defined]
     bpm = float(tempo)
 
-    onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=512)
+    onset_env = librosa.onset.onset_strength(y=y, sr=sr, hop_length=512)  # type: ignore[attr-defined]
     bar_duration = 60.0 / bpm * 4
     step_dur = bar_duration / steps
 

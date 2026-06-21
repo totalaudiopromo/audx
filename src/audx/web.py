@@ -60,7 +60,7 @@ tick();
 def _state() -> dict:
     pe = get_pattern_engine()
     engine = get_engine()
-    levels = engine.get_channel_levels() if engine else []
+    levels: list[float] = list(engine.get_channel_levels()) if engine else []
     return {
         "bpm": float(pe.bpm),
         "bar": int(pe.current_bar),
