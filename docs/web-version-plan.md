@@ -91,13 +91,16 @@ play voices; **Push 2 pad LEDs** port directly — the note + SysEx bytes from
 `audx/push2.py` are identical, so the kit lights up in-browser on Chrome/Edge.
 
 ### Phase 3 — Parity & sharing *(incremental)*
-- **M3.1 Mixer** — per-channel gain/mute/pan (already modelled).
+- **M3.1 Mixer** — per-track mute/solo/volume ✅ (in the studio). Pan still to do.
 - **M3.2 Songs** — port the `Song`/section model; render/arrange in-browser.
-- **M3.3 Projects** — save/load to `localStorage`; **share links** that encode a
-  project in the URL (no backend).
+- **M3.3 Projects** — ✅ *shipped.* `localStorage` autosave + **share links** that
+  encode the whole session in the URL hash (no backend) — `web/src/project.ts`,
+  round-trip tested (`web/tests/project.test.ts`).
 - **M3.4 Your samples** — drag-and-drop via the File API; decode with Web Audio so
   the synth fallback and real samples both work, matching the CLI's resolve order.
-- **M3.5 Export** — render-to-WAV (done in Phase 1) plus stems.
+- **M3.5 Export** — ✅ *shipped:* offline render-to-WAV from the studio
+  (`web/src/render.ts`, tested) reusing the native synth + scheduler timing. Stems
+  still to do.
 
 ### Sequencing & ownership
 Phase 2 is the real build and the natural next sprint. Do **M2.2 (DSL) and M2.1

@@ -7,19 +7,12 @@
  */
 
 import { SYNTH_VOICES, synthVoice, type Voice } from "./synth";
+import { STEPS, audibleTracks, type ProjectState, type Track } from "./types";
+import { decodeProject, encodeProject } from "./project";
+import { renderProject, toWav } from "./render";
 
-const STEPS = 16;
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
-
-interface Track {
-  id: number;
-  voice: Voice;
-  steps: boolean[];
-  mute: boolean;
-  solo: boolean;
-  gain: number; // 0..1.4
-}
 
 interface Starter {
   voice: Voice;
@@ -41,12 +34,40 @@ function makeTrack(voice: Voice, hits: number[] = []): Track {
 }
 
 // ── state ───────────────────────────────────────────────────────────────────────
-const state = {
+interface StudioState extends ProjectState {
+  playing: boolean;
+}
+const state: StudioState = {
   tracks: STARTER.map((s) => makeTrack(s.voice, s.pattern)),
   bpm: 124,
   swing: 0,
   playing: false,
 };
+
+const STORAGE_KEY = "audx.studio.session";
+
+function snapshot(): ProjectState {
+  return { bpm: state.bpm, swing: state.swing, tracks: state.tracks };
+}
+
+function persist(): void {
+  try { localStorage.setItem(STORAGE_KEY, encodeProject(snapshot())); } catch { /* ignore */ }
+}
+
+/** Load from the URL hash (a shared link) or localStorage, if present. */
+function loadSaved(): void {
+  const fromHash = location.hash.startsWith("#p=") ? decodeProject(location.hash.slice(3)) : null;
+  const saved = fromHash ?? (() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); return s ? decodeProject(s) : null; }
+    catch { return null; }
+  })();
+  if (saved && saved.tracks.length) {
+    state.bpm = saved.bpm;
+    state.swing = saved.swing;
+    state.tracks = saved.tracks;
+    nextId = Math.max(0, ...state.tracks.map((t) => t.id)) + 1;
+  }
+}
 
 // ── audio engine ──────────────────────────────────────────────────────────────
 let ctx: AudioContext | null = null;
@@ -81,18 +102,12 @@ function voiceBuffer(voice: Voice): AudioBuffer {
   return buf;
 }
 
-function audibleTracks(): Track[] {
-  const soloed = state.tracks.filter((t) => t.solo);
-  const pool = soloed.length ? soloed : state.tracks;
-  return pool.filter((t) => !t.mute);
-}
-
 function secondsPerStep(): number {
   return 60.0 / state.bpm / 4.0; // 16th notes
 }
 
 function scheduleStep(step: number, time: number): void {
-  const audible = audibleTracks();
+  const audible = audibleTracks(state.tracks);
   const swingOffset = step % 2 === 1 ? secondsPerStep() * state.swing : 0;
   for (const track of audible) {
     if (!track.steps[step]) continue;
@@ -213,7 +228,7 @@ grid.addEventListener("pointerover", (e) => {
   track.steps[step] = painting;
   cell.classList.toggle("on", painting);
 });
-window.addEventListener("pointerup", () => { painting = null; });
+window.addEventListener("pointerup", () => { if (painting !== null) persist(); painting = null; });
 
 grid.addEventListener("change", (e) => {
   const el = e.target as HTMLElement;
@@ -222,6 +237,7 @@ grid.addEventListener("change", (e) => {
   if (!track) return;
   if (el.classList.contains("voice")) track.voice = (el as HTMLSelectElement).value as Voice;
   if (el.classList.contains("vol")) track.gain = Number((el as HTMLInputElement).value);
+  persist();
 });
 grid.addEventListener("click", (e) => {
   const btn = (e.target as HTMLElement).closest("button.mini") as HTMLElement | null;
@@ -232,6 +248,7 @@ grid.addEventListener("click", (e) => {
   if (btn.classList.contains("mute")) { track.mute = !track.mute; btn.classList.toggle("on", track.mute); }
   else if (btn.classList.contains("solo")) { track.solo = !track.solo; btn.classList.toggle("on", track.solo); }
   else if (btn.classList.contains("del")) { state.tracks = state.tracks.filter((t) => t.id !== track.id); renderGrid(); }
+  persist();
 });
 
 // ── transport + toolbar ───────────────────────────────────────────────────────
@@ -274,24 +291,42 @@ function wireToolbar(): void {
   $("#play").addEventListener("click", togglePlay);
   $("#clear").addEventListener("click", () => {
     state.tracks.forEach((t) => t.steps.fill(false));
-    renderGrid();
+    renderGrid(); persist();
   });
   $("#add").addEventListener("click", () => {
     const used = new Set(state.tracks.map((t) => t.voice));
     const next = SYNTH_VOICES.find((v) => !used.has(v)) ?? "kick";
     state.tracks.push(makeTrack(next));
-    renderGrid();
+    renderGrid(); persist();
   });
 
   const bpm = $<HTMLInputElement>("#bpm");
   const bpmVal = $("#bpm-val");
-  bpm.addEventListener("input", () => { state.bpm = Number(bpm.value); bpmVal.textContent = bpm.value; });
+  bpm.addEventListener("input", () => { state.bpm = Number(bpm.value); bpmVal.textContent = bpm.value; persist(); });
 
   const swing = $<HTMLInputElement>("#swing");
   const swingVal = $("#swing-val");
   swing.addEventListener("input", () => {
     state.swing = Number(swing.value) / 100;
     swingVal.textContent = `${swing.value}%`;
+    persist();
+  });
+
+  $("#share").addEventListener("click", async () => {
+    const url = `${location.origin}${location.pathname}#p=${encodeProject(snapshot())}`;
+    history.replaceState(null, "", url);
+    try { await navigator.clipboard.writeText(url); $("#share").textContent = "link copied ✓"; }
+    catch { $("#share").textContent = "link in address bar"; }
+    setTimeout(() => ($("#share").textContent = "share link"), 1600);
+  });
+
+  $("#wav").addEventListener("click", () => {
+    ensureAudio();
+    const wav = toWav(renderProject(snapshot(), 2, ctx!.sampleRate));
+    const url = URL.createObjectURL(new Blob([wav.buffer as ArrayBuffer], { type: "audio/wav" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = "audx-studio.wav"; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 
   $("#export").addEventListener("click", async () => {
@@ -312,6 +347,17 @@ function wireToolbar(): void {
   });
 }
 
+function syncTransportInputs(): void {
+  const bpm = $<HTMLInputElement>("#bpm");
+  const swing = $<HTMLInputElement>("#swing");
+  bpm.value = String(state.bpm);
+  $("#bpm-val").textContent = String(state.bpm);
+  swing.value = String(Math.round(state.swing * 100));
+  $("#swing-val").textContent = `${Math.round(state.swing * 100)}%`;
+}
+
+loadSaved();
 renderGrid();
 wireToolbar();
+syncTransportInputs();
 paintTransport();
