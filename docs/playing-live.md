@@ -145,6 +145,17 @@ audx song render track.json -o track.wav
 
 ---
 
+## Watch it on a second screen
+
+Host the live dashboard from the TUI and open it on a phone or tablet on the same
+Wi-Fi — handy for kids to watch the grid light up while someone else plays:
+
+```bash
+audx open --serve                 # then visit http://<this-computer>:8080/
+```
+
+The dashboard is read-only (a sequencer grid + meters that follow the session).
+
 ## Troubleshooting
 
 **No sound when I hit pads**

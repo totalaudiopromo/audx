@@ -137,12 +137,21 @@ class _Handler(BaseHTTPRequestHandler):
         return
 
 
-def serve(host: str = "127.0.0.1", port: int = 8080) -> None:
-    """Serve the dashboard until KeyboardInterrupt."""
+def serve_in_background(host: str = "127.0.0.1", port: int = 8080) -> ThreadingHTTPServer:
+    """Start the dashboard server in a daemon thread and return the server.
+
+    Used to embed the dashboard inside a running process (e.g. the TUI) so it
+    reflects that process's live session. Caller keeps the returned server alive.
+    """
     httpd = ThreadingHTTPServer((host, port), _Handler)
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd
+
+
+def serve(host: str = "127.0.0.1", port: int = 8080) -> None:
+    """Serve the dashboard until KeyboardInterrupt (standalone `audx serve`)."""
+    httpd = serve_in_background(host, port)
     try:
-        thread.join()
+        threading.Event().wait()
     except KeyboardInterrupt:
         httpd.shutdown()

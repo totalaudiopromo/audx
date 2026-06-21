@@ -44,3 +44,21 @@ def test_state_empty_when_no_patterns():
 def test_dashboard_is_html():
     assert web.DASHBOARD.lstrip().startswith("<!doctype html>")
     assert "/state" in web.DASHBOARD
+
+
+def test_background_server_serves_state_and_dashboard():
+    import json
+    import urllib.request
+
+    _add("kick", "kick 4/4")
+    httpd = web.serve_in_background(host="127.0.0.1", port=0)
+    try:
+        port = httpd.server_address[1]
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=2) as r:
+            assert r.status == 200
+            assert b"<!doctype html>" in r.read()[:64].lower()
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/state", timeout=2) as r:
+            state = json.loads(r.read())
+            assert any(t["name"] == "kick" for t in state["tracks"])
+    finally:
+        httpd.shutdown()

@@ -174,7 +174,7 @@ Full walkthrough (kids included): [docs/playing-live.md](docs/playing-live.md).
 | **MIDI** | `export midi` · `midi out\|rec\|list` |
 | **AI (optional extras)** | `ai pattern\|similar\|tag\|groove\|key` |
 | **Bridges** | `plugins scan` · `push2 map\|lights` · `heartmula` · `sadact` · `daemon` |
-| **Live dashboard** | `serve` |
+| **Live dashboard** | `serve` · `open --serve` (host it from the TUI) |
 | **Diagnostics** | `doctor` · `version` |
 
 Run `audx --help` or `audx <command> --help` for details.
