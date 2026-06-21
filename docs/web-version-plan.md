@@ -66,10 +66,21 @@ cases covering every grammar branch, the `16x8`=16-hits quirk, banker's rounding
 swing, sample aliases and modifier clamping. A Python test guards the fixtures
 against drift, and CI runs both sides (`web` job in `ci.yml`).
 
-**M2.1 — TS synth engine.** Port the ~20 voices to an `AudioWorklet` (or rendered
-buffers). *Acceptance:* extend the same golden-vector harness with per-voice audio
-references (length/peak/rms + decimated waveform) so each TS voice matches the numpy
-one within tolerance. *Next up.*
+**M2.1 — TS synth engine.** ✅ *shipped.* All 20 voices ported to `web/src/synth.ts`
+(rendered buffers, played through Web Audio). Golden-vector verified: the 10
+noiseless voices match numpy **sample-for-sample** (mean err < 2e-4), cowbell + the
+9 noise voices match structurally (normalized peak, envelope correlation, energy),
+and the repitch resampler is checked too — 44 vitest assertions. Also fixed a latent
+bug: `perc` had no `percussion` alias so those steps dropped silently.
+
+**M2.4 — Web UI.** ✅ *first cut shipped:* **audx studio** (`site/studio.html`) — a
+16-step grid drum machine driven by the native synth, with a sample-accurate Web
+Audio lookahead scheduler, per-track mute/solo/volume, swing, a master meter, drag-
+to-paint, spacebar transport, and **copy-as-audx-DSL** (the CLI bridge). Bundled
+with esbuild (`web/src/studio.ts` → `site/studio.js`); built in the Pages deploy.
+
+**M2.3 — Lookahead scheduler.** ✅ landed as part of the studio (25 ms tick /
+100 ms lookahead, real swing offset on odd 16ths).
 **M2.3 — Lookahead scheduler.** Web Audio sample-accurate clock (the standard
 25 ms-tick / 100 ms-lookahead pattern). *Acceptance:* steady timing at 124 BPM, no
 drift over 5 minutes.

@@ -12,9 +12,24 @@ Run: ``python scripts/gen_web_fixtures.py`` (CI/tests assert the output is curre
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
+import numpy as np
+
 from audx.pattern import Pattern
+from audx.synth import SYNTH_VOICES, synth_voice
+
+SR = 48000
+# Voices the TS port matches sample-for-sample. Excludes the noise voices (numpy's
+# PCG64 isn't reproducible in JS) and cowbell, whose np.sign() flips at zero
+# crossings on ~1e-16 float differences — deterministic but not bitwise-portable.
+EXACT = {
+    "sub", "rim", "tom", "perc",
+    "bass", "pluck", "stab", "keys", "saw", "sine",
+}
+DECIMATE_TARGET = 512
+ENV_WINDOWS = 64
 
 FIXTURE_DIR = Path(__file__).resolve().parent.parent / "web" / "fixtures"
 
@@ -100,6 +115,40 @@ def build_swing_fixtures() -> list[dict]:
     return cases
 
 
+def _windowed_rms(buf: np.ndarray) -> list[float]:
+    n = len(buf)
+    out = []
+    for i in range(ENV_WINDOWS):
+        seg = buf[(i * n) // ENV_WINDOWS : ((i + 1) * n) // ENV_WINDOWS]
+        out.append(math.sqrt(float(np.mean(seg**2))) if seg.size else 0.0)
+    return out
+
+
+def _voice_ref(name: str, *, tune: float = 0.0) -> dict:
+    buf = synth_voice(name, SR, tune_semitones=tune, seed=0).astype(np.float64)
+    n = len(buf)
+    stride = max(1, n // DECIMATE_TARGET)
+    return {
+        "voice": name,
+        "tune": tune,
+        "exact": name in EXACT,
+        "n": n,
+        "stride": stride,
+        "peak": float(np.max(np.abs(buf))) if n else 0.0,
+        "rms": math.sqrt(float(np.mean(buf**2))) if n else 0.0,
+        "decimated": [float(buf[i]) for i in range(0, n, stride)],
+        "env": _windowed_rms(buf),
+    }
+
+
+def build_synth_fixtures() -> list[dict]:
+    refs = [_voice_ref(v) for v in SYNTH_VOICES]
+    # a couple of repitched references to exercise the resampler
+    refs.append(_voice_ref("sine", tune=-7.0))
+    refs.append(_voice_ref("bass", tune=5.0))
+    return refs
+
+
 def main() -> None:
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
     (FIXTURE_DIR / "dsl.json").write_text(
@@ -107,6 +156,9 @@ def main() -> None:
     )
     (FIXTURE_DIR / "swing.json").write_text(
         json.dumps(build_swing_fixtures(), indent=2) + "\n"
+    )
+    (FIXTURE_DIR / "synth.json").write_text(
+        json.dumps(build_synth_fixtures()) + "\n"
     )
     print(f"wrote fixtures to {FIXTURE_DIR}")
 

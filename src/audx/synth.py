@@ -99,6 +99,9 @@ VOICE_ALIASES: dict[str, str] = {
     "maraca": "shaker",
     "rd": "ride",
     "ep": "keys",
+    # pattern.py maps the `perc` instrument to "percussion"; alias it back so those
+    # steps render instead of silently dropping (`openhat` is already aliased above).
+    "percussion": "perc",
 }
 
 
