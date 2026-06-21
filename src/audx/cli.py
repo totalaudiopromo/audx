@@ -560,11 +560,11 @@ def track_rm(name: str = typer.Argument(..., help="Track / pattern name")) -> No
     typer.echo(f"  ✓ removed '{name}'" if removed else f"  · not found: {name}")
 
 
-@mix_app.command("set")
+@mix_app.command("set", context_settings={"ignore_unknown_options": True})
 def mix_set(
     channel: int = typer.Argument(..., help="Channel index (0-based)"),
     param: str = typer.Argument(..., help="gain | mute"),
-    value: str = typer.Argument(..., help="dB for gain, on/off for mute"),
+    value: str = typer.Argument(..., help="dB for gain (e.g. -3), on/off for mute"),
 ) -> None:
     """Set a mixer parameter (spec §06)."""
     engine = get_engine() or init_engine()
