@@ -1,282 +1,428 @@
 import {
   AbsoluteFill,
-  Sequence,
+  Audio,
+  Easing,
   interpolate,
-  spring,
+  staticFile,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 import { COLORS, MONO } from "./theme";
+import beat from "./beat-data.json";
 
-// ── small building blocks ─────────────────────────────────────────────────────
+const FPS = beat.fps;
+const FPS_PER_STEP = beat.framesPerStep;
+const STEPS = beat.stepsPerBar;
 
-const Background: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      backgroundColor: COLORS.bg,
-      backgroundImage: `radial-gradient(1200px 600px at 82% -10%, rgba(212,165,116,0.12), transparent),
-                        radial-gradient(900px 600px at 0% 12%, rgba(168,192,135,0.08), transparent)`,
-    }}
-  />
-);
+// ── timing helpers ────────────────────────────────────────────────────────────
 
-const FadeUp: React.FC<{ delay?: number; children: React.ReactNode }> = ({
-  delay = 0,
-  children,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const s = spring({ frame: frame - delay, fps, config: { damping: 200 } });
+const ease = Easing.inOut(Easing.cubic);
+
+/** Smooth 0→1→0 opacity for a scene window with eased fades. */
+function band(
+  frame: number,
+  inStart: number,
+  inEnd: number,
+  outStart: number,
+  outEnd: number
+): number {
   return (
-    <div style={{ opacity: s, transform: `translateY(${(1 - s) * 28}px)` }}>
-      {children}
-    </div>
+    interpolate(frame, [inStart, inEnd], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: ease,
+    }) *
+    interpolate(frame, [outStart, outEnd], [1, 0], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: ease,
+    })
+  );
+}
+
+/** Level of a track at `frame`: 1 on a hit, decaying exponentially after. */
+function trackLevel(hits: number[], frame: number, decay = 9): number {
+  let last = -1e9;
+  for (const h of hits) {
+    if (h <= frame && h > last) last = h;
+    if (h > frame) break;
+  }
+  const dt = frame - last;
+  return dt < 0 ? 0 : Math.exp(-dt / decay);
+}
+
+const envAt = (frame: number): number =>
+  beat.envelope[Math.max(0, Math.min(beat.envelope.length - 1, frame))] ?? 0;
+
+// ── background ────────────────────────────────────────────────────────────────
+
+const Background: React.FC = () => {
+  const frame = useCurrentFrame();
+  const e = envAt(frame);
+  // neon glows that breathe with the beat — magenta top-right, cyan lower-left
+  const glow = 0.1 + e * 0.22;
+  return (
+    <AbsoluteFill style={{ backgroundColor: COLORS.bg }}>
+      <AbsoluteFill
+        style={{
+          backgroundImage: `radial-gradient(1500px 820px at 80% ${
+            -10 + e * 8
+          }%, rgba(255,47,176,${glow}), transparent),
+            radial-gradient(1200px 760px at 2% 18%, rgba(52,245,255,${
+              0.08 + e * 0.16
+            }), transparent),
+            radial-gradient(900px 600px at 50% 120%, rgba(184,107,255,${
+              0.06 + e * 0.12
+            }), transparent)`,
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(circle at 50% 45%, black, transparent 75%)",
+        }}
+      />
+    </AbsoluteFill>
   );
 };
 
-// A faithful terminal window that types `lines` out over time.
-const Terminal: React.FC<{
-  title: string;
-  lines: { text: string; color: string; bold?: boolean }[];
-  startFrame?: number;
-  cps?: number; // characters per second
-}> = ({ title, lines, startFrame = 0, cps = 38 }) => {
-  const frame = useCurrentFrame() - startFrame;
-  const { fps } = useVideoConfig();
-  const charsShown = Math.max(0, Math.floor((frame / fps) * cps));
+// ── hero ──────────────────────────────────────────────────────────────────────
 
-  let budget = charsShown;
+const Hero: React.FC = () => {
+  const frame = useCurrentFrame();
+  const o = band(frame, 4, 28, 78, 100);
+  const rise = interpolate(frame, [4, 30], [26, 0], {
+    extrapolateRight: "clamp",
+    easing: ease,
+  });
+  const e = envAt(frame);
   return (
-    <div
+    <AbsoluteFill
       style={{
-        width: 1180,
-        borderRadius: 18,
-        backgroundColor: COLORS.surface,
-        boxShadow: "0 40px 120px rgba(0,0,0,0.55)",
-        border: `1px solid ${COLORS.border}`,
-        overflow: "hidden",
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: o,
         fontFamily: MONO,
       }}
     >
-      <div
-        style={{
-          height: 56,
-          backgroundColor: COLORS.bar,
-          display: "flex",
-          alignItems: "center",
-          paddingLeft: 22,
-          gap: 12,
-          borderBottom: `1px solid ${COLORS.border}`,
-        }}
-      >
-        {[COLORS.red, COLORS.amber, COLORS.sage].map((c) => (
-          <div
-            key={c}
-            style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: c }}
-          />
-        ))}
-        <span style={{ color: COLORS.muted, marginLeft: 16, fontSize: 22 }}>
-          {title}
-        </span>
-      </div>
-      <div style={{ padding: "30px 34px", fontSize: 30, lineHeight: 1.5 }}>
-        {lines.map((line, i) => {
-          const take = Math.max(0, Math.min(line.text.length, budget));
-          budget -= line.text.length;
-          if (take <= 0 && budget < 0) return <div key={i}>&nbsp;</div>;
-          return (
-            <div
-              key={i}
-              style={{ color: line.color, fontWeight: line.bold ? 700 : 400 }}
-            >
-              {line.text.slice(0, take) || " "}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// ── scenes ────────────────────────────────────────────────────────────────────
-
-const SceneHook: React.FC = () => (
-  <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-    <div style={{ textAlign: "center", fontFamily: MONO }}>
-      <FadeUp>
-        <div style={{ color: COLORS.amber, fontSize: 40, letterSpacing: 6 }}>
+      <div style={{ textAlign: "center", transform: `translateY(${rise}px)` }}>
+        <div
+          style={{
+            color: COLORS.amber,
+            fontSize: 40,
+            letterSpacing: 10,
+            textShadow: `0 0 ${10 + e * 30}px rgba(212,165,116,0.7)`,
+          }}
+        >
           ▸ audx
         </div>
-      </FadeUp>
-      <FadeUp delay={12}>
         <div
           style={{
             color: COLORS.text,
-            fontSize: 96,
+            fontSize: 104,
             fontWeight: 800,
-            marginTop: 18,
-            lineHeight: 1.1,
+            lineHeight: 1.08,
+            marginTop: 20,
           }}
         >
           Code your music.
           <br />
           <span style={{ color: COLORS.pink }}>Own your sound.</span>
         </div>
-      </FadeUp>
-      <FadeUp delay={26}>
-        <div style={{ color: COLORS.muted, fontSize: 34, marginTop: 28 }}>
-          A terminal-native DAW. No cloud. No mouse. No lock-in.
+        <div style={{ color: COLORS.muted, fontSize: 34, marginTop: 30 }}>
+          A terminal-native DAW that makes sound the second you install it.
         </div>
-      </FadeUp>
-    </div>
-  </AbsoluteFill>
-);
-
-const SceneInstall: React.FC = () => (
-  <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-    <FadeUp>
-      <Terminal
-        title="make a beat in 10 seconds"
-        cps={32}
-        lines={[
-          { text: "$ pip install audx", color: COLORS.text, bold: true },
-          { text: "Successfully installed audx-0.3.0", color: COLORS.muted },
-          { text: "", color: COLORS.muted },
-          { text: "$ audx demo loop.wav", color: COLORS.text, bold: true },
-          { text: "  audx · demo", color: COLORS.amber, bold: true },
-          { text: "    ♪ kick     kick 4/4", color: COLORS.muted },
-          { text: "    ♪ sub      sub e(3,8) | tune -5st", color: COLORS.muted },
-          { text: "    ♪ clap     clap 2/8", color: COLORS.muted },
-          { text: "    ♪ hats     hh 16x8 | swing 12%", color: COLORS.muted },
-          { text: "    ♪ bass     bass e(3,8) | tune -7st", color: COLORS.muted },
-          {
-            text: "  ✓ rendered 4 bars @ 124 BPM → loop.wav",
-            color: COLORS.sage,
-            bold: true,
-          },
-        ]}
-      />
-    </FadeUp>
-    <FadeUp delay={20}>
-      <div style={{ color: COLORS.muted, fontSize: 30, marginTop: 34, fontFamily: MONO }}>
-        No samples. No audio hardware. No config.
-      </div>
-    </FadeUp>
-  </AbsoluteFill>
-);
-
-const Feature: React.FC<{ title: string; body: string; delay: number }> = ({
-  title,
-  body,
-  delay,
-}) => (
-  <FadeUp delay={delay}>
-    <div
-      style={{
-        width: 760,
-        backgroundColor: COLORS.surface,
-        border: `1px solid ${COLORS.border}`,
-        borderRadius: 16,
-        padding: "26px 30px",
-        fontFamily: MONO,
-      }}
-    >
-      <div style={{ color: COLORS.amber, fontSize: 34, fontWeight: 700 }}>
-        {title}
-      </div>
-      <div style={{ color: COLORS.muted, fontSize: 26, marginTop: 10 }}>{body}</div>
-    </div>
-  </FadeUp>
-);
-
-const SceneFeatures: React.FC = () => (
-  <AbsoluteFill
-    style={{
-      justifyContent: "center",
-      alignItems: "center",
-      gap: 22,
-    }}
-  >
-    <Feature
-      title="Pattern DSL"
-      body="kick 4/4 · hh 16x8 · perc e(5,16,2) · clap [1.0.1.1]"
-      delay={0}
-    />
-    <Feature
-      title="Built-in synth kit"
-      body="20 procedural voices — drums, sub bass, plucks, stabs. Zero samples."
-      delay={10}
-    />
-    <Feature
-      title="Render · MIDI · live-code"
-      body="Stems to WAV, export MIDI, hot-reload projects, A/B/C/D slots."
-      delay={20}
-    />
-  </AbsoluteFill>
-);
-
-const SceneCTA: React.FC = () => {
-  const frame = useCurrentFrame();
-  const pulse = interpolate(frame % 60, [0, 30, 60], [1, 0.55, 1]);
-  return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-      <div style={{ textAlign: "center", fontFamily: MONO }}>
-        <FadeUp>
-          <div style={{ color: COLORS.text, fontSize: 64, fontWeight: 800 }}>
-            Open a terminal. Hit play.
-          </div>
-        </FadeUp>
-        <FadeUp delay={12}>
-          <div
-            style={{
-              marginTop: 36,
-              display: "inline-block",
-              backgroundColor: COLORS.surface,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 14,
-              padding: "22px 38px",
-              fontSize: 38,
-              color: COLORS.text,
-            }}
-          >
-            <span style={{ color: COLORS.pink }}>$ </span>
-            pip install audx
-            <span style={{ opacity: pulse, color: COLORS.amber }}> ▌</span>
-          </div>
-        </FadeUp>
-        <FadeUp delay={24}>
-          <div style={{ color: COLORS.sage, fontSize: 28, marginTop: 40, fontStyle: "italic" }}>
-            Code is the controller. Sound is the canvas. Terminal is the dimension.
-          </div>
-        </FadeUp>
-        <FadeUp delay={32}>
-          <div style={{ color: COLORS.muted, fontSize: 26, marginTop: 18 }}>
-            github.com/totalaudiopromo/audx
-          </div>
-        </FadeUp>
       </div>
     </AbsoluteFill>
   );
 };
 
-// ── timeline ──────────────────────────────────────────────────────────────────
+// ── the live sequencer (the star) ─────────────────────────────────────────────
+
+const LABEL_W = 360;
+const CELL = 70;
+const GAP = 10;
+const VU_W = 130;
+
+const Sequencer: React.FC = () => {
+  const frame = useCurrentFrame();
+  const o = band(frame, 78, 104, 498, 522);
+
+  // continuous play position in steps, wrapping each bar
+  const stepPos = frame / FPS_PER_STEP;
+  const colF = ((stepPos % STEPS) + STEPS) % STEPS;
+
+  const gridW = STEPS * CELL + (STEPS - 1) * GAP;
+  const rise = interpolate(frame, [78, 110], [40, 0], {
+    extrapolateRight: "clamp",
+    easing: ease,
+  });
+
+  return (
+    <AbsoluteFill
+      style={{
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: o,
+        fontFamily: MONO,
+      }}
+    >
+      <div style={{ transform: `translateY(${rise}px)` }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginBottom: 22,
+            color: COLORS.muted,
+            fontSize: 26,
+          }}
+        >
+          <span style={{ color: COLORS.amber, fontWeight: 700 }}>audx · live</span>
+          <span>124 BPM</span>
+          <span style={{ color: COLORS.sage }}>▍ synth kit · no samples</span>
+        </div>
+
+        <div
+          style={{
+            position: "relative",
+            width: LABEL_W + gridW + VU_W + 48,
+            padding: "26px 24px",
+            borderRadius: 18,
+            background: "rgba(30,30,30,0.72)",
+            border: `1px solid ${COLORS.border}`,
+            boxShadow: "0 40px 120px rgba(0,0,0,0.5)",
+          }}
+        >
+          {/* moving playhead column */}
+          <div
+            style={{
+              position: "absolute",
+              left: 24 + LABEL_W + colF * (CELL + GAP) - 4,
+              top: 18,
+              width: CELL + 8,
+              bottom: 18,
+              borderRadius: 12,
+              background:
+                "linear-gradient(rgba(52,245,255,0.26), rgba(52,245,255,0.04))",
+              border: "1px solid rgba(52,245,255,0.5)",
+              boxShadow: "0 0 40px rgba(52,245,255,0.25)",
+            }}
+          />
+          {beat.tracks.map((track) => {
+            const level = trackLevel(track.hits, frame);
+            return (
+              <div
+                key={track.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  height: CELL,
+                  marginBottom: GAP,
+                }}
+              >
+                <div
+                  style={{
+                    width: LABEL_W,
+                    paddingRight: 22,
+                    textAlign: "right",
+                    fontSize: 26,
+                  }}
+                >
+                  <span style={{ color: track.color, fontWeight: 700 }}>
+                    {track.name}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: GAP }}>
+                  {track.steps.map((on, col) => {
+                    // distance (in steps) since the playhead last crossed this column
+                    let d = colF - col;
+                    if (d < 0) d += STEPS;
+                    const fresh = Math.exp(-d / 1.6); // 1 just-played → 0
+                    const lit = on ? 0.32 + fresh * 0.68 : 0.05;
+                    const scale = on ? 1 + fresh * 0.14 : 1;
+                    const beatCol = col % 4 === 0;
+                    return (
+                      <div
+                        key={col}
+                        style={{
+                          width: CELL,
+                          height: CELL,
+                          borderRadius: 12,
+                          transform: `scale(${scale})`,
+                          background: on ? track.color : "rgba(255,255,255,0.04)",
+                          opacity: lit,
+                          border: beatCol
+                            ? "1px solid rgba(255,255,255,0.16)"
+                            : "1px solid rgba(255,255,255,0.06)",
+                          boxShadow:
+                            on && fresh > 0.12
+                              ? `0 0 ${10 + fresh * 46}px ${track.color}`
+                              : "none",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                {/* per-track VU */}
+                <div
+                  style={{
+                    width: VU_W,
+                    marginLeft: 24,
+                    height: 16,
+                    borderRadius: 8,
+                    background: "rgba(255,255,255,0.05)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${level * 100}%`,
+                      height: "100%",
+                      background: track.color,
+                      borderRadius: 8,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <Scope />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ── waveform scope under the grid ─────────────────────────────────────────────
+
+const Scope: React.FC = () => {
+  const frame = useCurrentFrame();
+  const W = 1700;
+  const H = 150;
+  const mid = H / 2;
+  const n = beat.waveform.length;
+  const playX =
+    (Math.min(frame, beat.audioDurationFrames) / beat.audioDurationFrames) * W;
+
+  const path = beat.waveform
+    .map((p, i) => {
+      const x = (i / (n - 1)) * W;
+      const y = mid - p * (mid - 6);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const pathB = beat.waveform
+    .map((p, i) => {
+      const x = (i / (n - 1)) * W;
+      const y = mid + p * (mid - 6);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg
+      width={W}
+      height={H}
+      style={{ display: "block", margin: "30px auto 0", overflow: "visible" }}
+    >
+      <defs>
+        <linearGradient id="played" x1="0" x2="1">
+          <stop offset="0" stopColor={COLORS.cyan} />
+          <stop offset="0.5" stopColor={COLORS.violet} />
+          <stop offset="1" stopColor={COLORS.magenta} />
+        </linearGradient>
+        <clipPath id="reveal">
+          <rect x="0" y="0" width={playX} height={H} />
+        </clipPath>
+      </defs>
+      <path d={path} stroke={COLORS.border} strokeWidth={2} fill="none" />
+      <path d={pathB} stroke={COLORS.border} strokeWidth={2} fill="none" />
+      <g clipPath="url(#reveal)">
+        <path d={path} stroke="url(#played)" strokeWidth={2.5} fill="none" />
+        <path d={pathB} stroke="url(#played)" strokeWidth={2.5} fill="none" />
+      </g>
+      <line
+        x1={playX}
+        x2={playX}
+        y1={0}
+        y2={H}
+        stroke={COLORS.cyan}
+        strokeWidth={3}
+      />
+    </svg>
+  );
+};
+
+// ── CTA ───────────────────────────────────────────────────────────────────────
+
+const CTA: React.FC = () => {
+  const frame = useCurrentFrame();
+  const o = band(frame, 506, 532, 999, 1000);
+  const rise = interpolate(frame, [506, 540], [30, 0], {
+    extrapolateRight: "clamp",
+    easing: ease,
+  });
+  const blink = Math.abs(Math.sin((frame / FPS) * Math.PI * 1.4));
+  return (
+    <AbsoluteFill
+      style={{
+        justifyContent: "center",
+        alignItems: "center",
+        opacity: o,
+        fontFamily: MONO,
+      }}
+    >
+      <div style={{ textAlign: "center", transform: `translateY(${rise}px)` }}>
+        <div style={{ color: COLORS.text, fontSize: 70, fontWeight: 800 }}>
+          Open a terminal. Hit play.
+        </div>
+        <div
+          style={{
+            marginTop: 38,
+            display: "inline-block",
+            background: "rgba(30,30,30,0.85)",
+            border: `1px solid ${COLORS.border}`,
+            borderRadius: 14,
+            padding: "24px 42px",
+            fontSize: 42,
+            color: COLORS.text,
+          }}
+        >
+          <span style={{ color: COLORS.pink }}>$ </span>
+          pip install audx
+          <span style={{ opacity: blink, color: COLORS.amber }}> ▌</span>
+        </div>
+        <div
+          style={{
+            color: COLORS.sage,
+            fontSize: 27,
+            marginTop: 42,
+            fontStyle: "italic",
+          }}
+        >
+          Code is the controller. Sound is the canvas. Terminal is the dimension.
+        </div>
+        <div style={{ color: COLORS.muted, fontSize: 26, marginTop: 16 }}>
+          github.com/totalaudiopromo/audx
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// ── composition ───────────────────────────────────────────────────────────────
 
 export const AudxPromo: React.FC = () => {
   return (
     <AbsoluteFill>
+      <Audio src={staticFile("audx-beat.wav")} />
       <Background />
-      <Sequence durationInFrames={120}>
-        <SceneHook />
-      </Sequence>
-      <Sequence from={120} durationInFrames={240}>
-        <SceneInstall />
-      </Sequence>
-      <Sequence from={360} durationInFrames={180}>
-        <SceneFeatures />
-      </Sequence>
-      <Sequence from={540} durationInFrames={180}>
-        <SceneCTA />
-      </Sequence>
+      <Hero />
+      <Sequencer />
+      <CTA />
     </AbsoluteFill>
   );
 };

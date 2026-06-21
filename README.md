@@ -12,7 +12,9 @@ keyboard. Calm, local, hackable. No cloud, no mouse, no lock-in.
 [![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-<img src="docs/assets/audx-demo.gif" alt="audx — make a beat in 10 seconds" width="720" />
+<a href="marketing/promo/audx-promo.mp4"><img src="docs/assets/promo-poster.png" alt="audx — terminal-native DAW with a live step sequencer" width="820" /></a>
+
+<sub>▶ the live synth sequencer · <a href="marketing/promo/audx-promo.mp4">watch the 20s promo</a></sub>
 
 </div>
 
@@ -26,6 +28,8 @@ No samples. No audio hardware. No config.
 pip install audx
 audx demo loop.wav
 ```
+
+<img src="docs/assets/audx-demo.gif" alt="audx demo session" width="640" />
 
 That writes a full multi-track beat — kick, sub, clap, hats, percussion — to
 `loop.wav` using the **built-in synth kit**. Open it and you're listening to
