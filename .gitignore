@@ -7,3 +7,12 @@ __pycache__/
 .coverage
 .coverage.*
 htmlcov/
+coverage.xml
+dist/
+build/
+*.egg-info/
+
+# marketing / remotion
+marketing/remotion/node_modules/
+marketing/remotion/out/
+marketing/remotion/.remotion/

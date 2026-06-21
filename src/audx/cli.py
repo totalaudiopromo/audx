@@ -40,6 +40,7 @@ midi_app = typer.Typer(help="MIDI clock out, input recording")
 macro_app = typer.Typer(help="Macro registers (vim-style qa…q…@a)")
 slot_app = typer.Typer(help="Pattern slots A/B/C/D")
 export_app = typer.Typer(help="Export to other formats")
+song_app = typer.Typer(help="Multi-section song arrangement (intro/verse/drop/outro)")
 app.add_typer(pattern_app, name="pattern")
 app.add_typer(samples_app, name="samples")
 app.add_typer(samples_app, name="stems")  # spec uses `audx stems`
@@ -56,6 +57,7 @@ app.add_typer(midi_app, name="midi")
 app.add_typer(macro_app, name="macro")
 app.add_typer(slot_app, name="slot")
 app.add_typer(export_app, name="export")
+app.add_typer(song_app, name="song")
 pattern_app.add_typer(slot_app, name="slot")  # `audx pattern slot ...`
 
 
@@ -432,6 +434,65 @@ def render_pattern(
     arrangement.add(pattern, start_bar=0, bars=bars)
     path = render_arrangement(arrangement, library, output)
     typer.echo(f"Rendered {path}")
+
+
+def _load_song(spec_path: Path):
+    """Load a song JSON spec into a Song. Shape:
+
+    {"bpm": 124, "sections": {"intro": {"patterns": ["kick 4/4", ...], "bars": 8}},
+     "sequence": ["intro", "verse", "drop", "verse", "drop", "outro"]}
+    """
+    import json
+
+    from audx.arrangement import Song
+
+    data = json.loads(spec_path.read_text())
+    return Song.from_spec(
+        bpm=float(data.get("bpm", 124.0)),
+        sections=data.get("sections", {}),
+        sequence=list(data.get("sequence", [])),
+    )
+
+
+@song_app.command("render")
+def song_render(
+    spec: Path = typer.Argument(..., help="Song spec JSON (bpm / sections / sequence)"),
+    output: Path = typer.Option(Path("song.wav"), "--output", "-o", help="Output WAV path"),
+    sample_rate: int = typer.Option(44100, "--sample-rate", help="Output sample rate"),
+) -> None:
+    """Render a multi-section song to a single WAV (built-in synth kit by default)."""
+    if not spec.exists():
+        typer.echo(f"Song spec not found: {spec}", err=True)
+        raise typer.Exit(1)
+    from audx.arrangement import render_song
+    from audx.sampler import get_sample_library
+
+    try:
+        song = _load_song(spec)
+    except (KeyError, ValueError) as exc:
+        typer.echo(f"Bad song spec: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    path = render_song(song, get_sample_library(), output, sample_rate=sample_rate)
+    typer.echo(f"  ✓ rendered {song.total_bars} bars @ {song.bpm:g} BPM → {path}")
+
+
+@song_app.command("info")
+def song_info(
+    spec: Path = typer.Argument(..., help="Song spec JSON"),
+) -> None:
+    """Print the resolved section timeline (section → start bar) and total length."""
+    if not spec.exists():
+        typer.echo(f"Song spec not found: {spec}", err=True)
+        raise typer.Exit(1)
+    try:
+        song = _load_song(spec)
+        timeline = song.timeline()
+    except (KeyError, ValueError) as exc:
+        typer.echo(f"Bad song spec: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"  song · {song.bpm:g} BPM · {song.total_bars} bars")
+    for section, start_bar in timeline:
+        typer.echo(f"    bar {start_bar:>3}  {section.name:<10} ({section.bars} bars)")
 
 
 @app.command("diff")

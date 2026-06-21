@@ -9,6 +9,37 @@ Both versions must keep version numbers in sync.
 
 ---
 
+## Automated PyPI release (recommended)
+
+Releases are published to PyPI by `.github/workflows/release.yml` using
+**PyPI Trusted Publishing (OIDC)** — no API token is stored in the repo.
+
+**One-time setup** (on PyPI, by the project owner):
+1. Create the `audx` project on PyPI (or run the first release to TestPyPI).
+2. Add a *trusted publisher*: PyPI → project → Settings → Publishing →
+   add GitHub, owner `totalaudiopromo`, repo `audx`, workflow `release.yml`,
+   environment `pypi`. See https://docs.pypi.org/trusted-publishers/.
+3. In GitHub repo settings, create an environment named `pypi`.
+
+**Each release:**
+```bash
+# 1. bump version in pyproject.toml AND package.json (keep them in sync)
+# 2. update CHANGELOG.md [Unreleased] -> the new version
+git commit -am "release: audx v0.3.0"
+git tag v0.3.0
+git push origin main --tags        # the tag triggers the Release workflow
+```
+The workflow builds the sdist + wheel with `uv build`, runs `twine check`, and
+publishes to PyPI. Verify a clean install afterwards: `pip install audx`.
+
+To build/inspect locally without publishing:
+```bash
+uv build            # -> dist/audx-<version>.tar.gz + .whl
+uvx twine check dist/*
+```
+
+---
+
 ## Prerequisites
 
 ### npm

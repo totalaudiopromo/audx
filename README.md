@@ -12,6 +12,8 @@ keyboard. Calm, local, hackable. No cloud, no mouse, no lock-in.
 [![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+<img src="docs/assets/audx-demo.gif" alt="audx — make a beat in 10 seconds" width="720" />
+
 </div>
 
 ---
@@ -44,9 +46,10 @@ the moment you install, and drop in your own audio whenever you want.
 audx is a real instrument you play from the terminal:
 
 - **Pattern DSL** — `kick 4/4`, `hh 16x8`, `perc e(5,16,2)`, `clap [1.0.1.1]`
-- **Built-in synth kit** — 14 procedurally-synthesised drum/perc voices, zero dependencies
+- **Built-in synth kit** — 20 procedurally-synthesised voices: drums, sub bass, plus melodic `bass`/`pluck`/`stab`/`keys`/`saw`/`sine`. Zero dependencies, zero samples.
+- **Song arrangements** — multi-section tracks (intro/verse/drop/outro) rendered to one WAV
 - **16-channel mixer** — gain, mute, pan and live level meters
-- **Textual TUI** — mixer strips, transport, tap tempo
+- **Textual TUI** — mixer strips, transport, tap tempo, and live finger-drum pads
 - **Offline rendering** — patterns and stems straight to WAV
 - **MIDI** — export to Standard MIDI File, clock-out to gear, record MIDI in
 - **Live-coding workflow** — `.audx` projects, slots, forks, hot-reload, diff
@@ -111,11 +114,44 @@ audx pattern create groove "x--- -x-- --x- ---x"           # x/rest grid
 See [docs/pattern-language.md](docs/pattern-language.md) and
 [docs/synth-kit.md](docs/synth-kit.md) for the full reference.
 
+## Songs
+
+Arrange patterns into a multi-section track and render it to one WAV. A song is
+a small JSON spec — sections of patterns, and the order they play:
+
+```json
+{
+  "bpm": 124,
+  "sections": {
+    "intro": {"patterns": ["hh 16x8 | swing 12%", "sub e(3,8) | tune -5st"], "bars": 4},
+    "drop":  {"patterns": ["kick 4/4", "clap 2/8", "bass e(5,16) | tune -7st"], "bars": 8},
+    "outro": {"patterns": ["hh 16x8 | vel 0.4"], "bars": 4}
+  },
+  "sequence": ["intro", "drop", "drop", "outro"]
+}
+```
+
+```bash
+audx song info  track.json     # resolved timeline: section → start bar
+audx song render track.json -o track.wav
+```
+
+## Play it live
+
+Open the TUI and finger-drum the synth kit straight from the keyboard — keys
+`w e r a s d f z x c` trigger kick/snare/clap/hats/etc on their own channels, no
+samples required:
+
+```bash
+audx open my-track
+```
+
 ## Command overview
 
 | Area | Commands |
 |------|----------|
 | **Make sound** | `demo` · `render` · `synths` · `play` · `stop` |
+| **Songs** | `song render <spec.json>` · `song info <spec.json>` |
 | **Patterns / tracks** | `pattern create\|list\|delete` · `track add\|rm` |
 | **Mixing** | `mix set <ch> gain\|mute` · `mute <ch>` |
 | **Samples / stems** | `samples index` · `stems search` · `samples list` |

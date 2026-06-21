@@ -1,8 +1,9 @@
 # The built-in synth kit
 
-audx ships a tiny procedural drum machine so it makes sound with **zero setup** —
-no sample library required. It's pure `numpy` (no audio backend, no scipy), so it
-imports anywhere and renders arrangements offline.
+audx ships a tiny procedural drum machine **and** a handful of pitched melodic
+voices so it makes sound with **zero setup** — no sample library required. It's
+pure `numpy` (no audio backend, no scipy), so it imports anywhere and renders
+arrangements offline.
 
 ## How fallback works
 
@@ -35,6 +36,29 @@ So `audx render "kick 4/4"` synthesises a kick today, and the day you drop a
 | `ride` | `rd` | Shimmering struck-cymbal partials |
 | `crash` | `cy`, `cym` | Long high-passed noise wash |
 | `shaker` | `shk`, `maraca` | Short filtered-noise shaker |
+| `bass` | — | Punchy synth bass: band-limited saw + sub sine, lowpassed (~C2) |
+| `pluck` | — | Short plucked saw with a downward lowpass sweep (~C3) |
+| `stab` | — | Bright detuned-saw minor-chord stab (root + min 3rd + 5th, ~C3) |
+| `keys` | `ep` | Soft electric-piano-ish tone: sine + harmonics, gentle attack (~C3) |
+| `saw` | — | Raw band-limited sawtooth building block (~C3) |
+| `sine` | — | Pure sine tone building block (~C3) |
+
+### Melodic voices
+
+The last six voices above are **pitched**, so audx can do basslines, stabs and
+chords — not just beats. Each renders at a sensible fixed base pitch (`bass` near
+**C2 ≈ 65 Hz**, the rest near **C3 ≈ 131 Hz**; `stab` is a minor triad rooted at
+C3). There is no note-name syntax in the DSL — you set pitch entirely with the
+existing `tune` modifier, which transposes by resampling:
+
+```bash
+audx render "bass e(3,8) | tune -5st"     -o bassline.wav   # down a fourth
+audx render "stab e(3,8,2) | tune 5st"    -o stabs.wav      # up a fourth
+audx render "keys 4/4 | tune 7st | vel 0.6"                 # up a fifth, softer
+```
+
+Their sawtooth content is band-limited (additive synthesis of a bounded set of
+harmonics), so repitching them up or down stays clean instead of aliasing harshly.
 
 List them any time:
 

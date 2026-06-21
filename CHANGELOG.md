@@ -7,10 +7,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
-- **Built-in synth kit** (`audx/synth.py`): 14 pure-numpy procedurally-synthesised
-  drum/percussion voices (`kick`, `sub`/`808`, `snare`, `clap`, `snap`, `hh`, `oh`,
-  `rim`, `tom`, `cowbell`, `perc`, `ride`, `crash`, `shaker`) with friendly
-  aliases, per-voice tuning, velocity scaling and deterministic (seeded) output.
+- **Built-in synth kit** (`audx/synth.py`): 20 pure-numpy procedurally-synthesised
+  voices with friendly aliases, per-voice tuning, velocity scaling and
+  deterministic (seeded) output.
+  - 14 drum/perc voices: `kick`, `sub`/`808`, `snare`, `clap`, `snap`, `hh`, `oh`,
+    `rim`, `tom`, `cowbell`, `perc`, `ride`, `crash`, `shaker`.
+  - 6 **melodic** voices: `bass`, `pluck`, `stab`, `keys` (alias `ep`), `saw`,
+    `sine` — pitched (band-limited sawtooth) and transposed via `tune`, so audx
+    does basslines, plucks and chord stabs, e.g. `bass e(5,16) | tune -7st`.
+    (`bass` is now its own voice, no longer an alias of `sub`.)
+- **Song arrangements** (`audx/arrangement.py` `Song`/`Section`/`render_song`) plus
+  `audx song render <spec.json>` and `audx song info <spec.json>`: build
+  multi-section tracks (intro/verse/drop/outro) from a JSON spec and render them
+  to a single WAV.
+- **Live finger-drum pads** in the TUI: keys `w e r a s d f z x c` (and `u i o`)
+  trigger built-in synth voices on dedicated channels while a project is open.
+- **Marketing assets**: an animated terminal demo GIF in the README
+  (`scripts/make-demo-gif.py`, Pillow-only) and a runnable Remotion promo video
+  project under `marketing/remotion/`.
+- **Automated PyPI releases**: `.github/workflows/release.yml` publishes on a
+  `v*` tag via PyPI Trusted Publishing (OIDC, no stored token).
 - **Zero-config sound**: the offline renderer falls back to the synth kit when a
   sample of the same name isn't found, so `audx render "kick 4/4"` makes sound
   with no sample library. `--sample` is now optional.
