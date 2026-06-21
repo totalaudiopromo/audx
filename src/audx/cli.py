@@ -260,6 +260,60 @@ def demo(
 
 
 @app.command()
+def jam(
+    port: str = typer.Option("", "--port", "-p", help="MIDI input port (default: first found)"),
+    chromatic: bool = typer.Option(
+        False, "--chromatic", help="Play one melodic voice across the keys (vs. drum pads)"
+    ),
+    voice: str = typer.Option("keys", "--voice", help="Melodic voice for --chromatic mode"),
+    bpm: float = typer.Option(124.0, "--bpm", help="Engine tempo"),
+) -> None:
+    """Play the synth kit live from a MIDI controller or Push 2 — instant sound.
+
+    Drum pads trigger drums (GM note map; every pad makes a sound). Use
+    ``--chromatic`` to play a melodic voice across a keyboard:
+
+        audx jam                      # drum pads → kick/snare/hat/...
+        audx jam --chromatic          # keyboard plays the 'keys' voice
+        audx jam --chromatic --voice bass
+    """
+    from audx.live import run_jam
+    from audx.midi import list_inputs
+
+    inputs = list_inputs()
+    if not inputs:
+        typer.echo("No MIDI inputs found. Plug in a controller (or run `audx midi list`).", err=True)
+        raise typer.Exit(1)
+    typer.echo(f"  MIDI in: {port or inputs[0]}")
+
+    engine = init_engine()
+    engine.set_bpm(bpm)
+    try:
+        engine.start()
+    except RuntimeError as exc:
+        typer.echo(f"  ✗ {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+    mode = "chromatic" if chromatic else "drums"
+    typer.echo(
+        f"  ♪ jam mode: {mode}" + (f" ({voice})" if chromatic else "  (hit some pads!)")
+    )
+    typer.echo("  Ctrl-C to stop.")
+
+    def _feedback(note: int, v: str, vel: int) -> None:
+        bar = "█" * max(1, vel // 12)
+        typer.echo(f"    {note:>3} → {v:<8} {bar}")
+
+    try:
+        run_jam(engine, port_name=port or None, mode=mode, voice=voice, on_trigger=_feedback)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        engine.stop()
+        typer.echo("\n  stopped.")
+
+
+@app.command()
 def synths() -> None:
     """List the built-in synth voices (usable in any pattern, no samples needed)."""
     from audx.synth import VOICE_ALIASES, list_voices

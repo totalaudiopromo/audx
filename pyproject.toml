@@ -1,6 +1,6 @@
 [project]
 name = "audx"
-version = "0.2.0"
+version = "0.3.0"
 description = "Terminal-native DAW: pattern sequencing, stem mixing, live coding workflow"
 license = "MIT"
 readme = "README.md"

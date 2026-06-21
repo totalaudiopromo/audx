@@ -150,9 +150,16 @@ class AudioEngine:
             self.active_voices.append(voice)
         return voice
 
-    def play_synth(self, name: str, channel: int, volume: float = 1.0, pan: float = 0.0) -> SynthVoice:
-        """Trigger a built-in synth voice immediately (used by the TUI keys)."""
-        buffer = synth_voice(name, self.sample_rate)
+    def play_synth(
+        self,
+        name: str,
+        channel: int,
+        volume: float = 1.0,
+        pan: float = 0.0,
+        tune_semitones: float = 0.0,
+    ) -> SynthVoice:
+        """Trigger a built-in synth voice immediately (used by the TUI keys + jam)."""
+        buffer = synth_voice(name, self.sample_rate, tune_semitones=tune_semitones)
         with self.lock:
             voice = SynthVoice(buffer, channel, volume, pan)
             self.active_voices.append(voice)

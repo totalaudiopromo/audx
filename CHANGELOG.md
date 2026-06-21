@@ -6,7 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-21
+
 ### Added
+- **Live MIDI jam** (`audx jam`): play the built-in synth kit in real time from a
+  MIDI controller or Push 2 — hit a pad, hear a sound instantly. Drums mode maps
+  General-MIDI notes to drum voices (and never leaves a pad silent); `--chromatic`
+  plays a melodic voice across the keys. New `audx/live.py` mapping module + tests,
+  and a guide at [docs/playing-live.md](docs/playing-live.md).
 - **Built-in synth kit** (`audx/synth.py`): 20 pure-numpy procedurally-synthesised
   voices with friendly aliases, per-voice tuning, velocity scaling and
   deterministic (seeded) output.
@@ -70,5 +77,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   sadact-finisher bridge, minimal local `audxd` daemon, latency calibration.
 - `audx doctor` diagnostics and CI across Python 3.10–3.12.
 
-[Unreleased]: https://github.com/totalaudiopromo/audx/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/totalaudiopromo/audx/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/totalaudiopromo/audx/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/totalaudiopromo/audx/releases/tag/v0.2.0

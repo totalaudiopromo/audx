@@ -142,19 +142,29 @@ audx song render track.json -o track.wav
 
 ## Play it live
 
-Open the TUI and finger-drum the synth kit straight from the keyboard — keys
-`w e r a s d f z x c` trigger kick/snare/clap/hats/etc on their own channels, no
-samples required:
+Plug in a **MIDI controller or Push 2** and play the synth kit in real time —
+hit a pad, hear a sound, no samples or setup:
+
+```bash
+audx midi list          # check your controller is detected
+audx jam                # drum pads → kick/snare/hat/... (every pad makes a sound)
+audx jam --chromatic --voice bass   # play a bassline across the keys
+```
+
+No controller? Finger-drum from the **computer keyboard** in the TUI — keys
+`w e r a s d f z x c` trigger kick/snare/clap/hats/etc on their own channels:
 
 ```bash
 audx open my-track
 ```
 
+Full walkthrough (kids included): [docs/playing-live.md](docs/playing-live.md).
+
 ## Command overview
 
 | Area | Commands |
 |------|----------|
-| **Make sound** | `demo` · `render` · `synths` · `play` · `stop` |
+| **Make sound** | `demo` · `render` · `synths` · `jam` · `play` · `stop` |
 | **Songs** | `song render <spec.json>` · `song info <spec.json>` |
 | **Patterns / tracks** | `pattern create\|list\|delete` · `track add\|rm` |
 | **Mixing** | `mix set <ch> gain\|mute` · `mute <ch>` |
