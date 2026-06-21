@@ -7,13 +7,17 @@
  */
 
 import { SYNTH_VOICES, synthVoice, type Voice } from "./synth";
-import { STEPS, audibleTracks, type ProjectState, type Track } from "./types";
+import {
+  BAR_STEPS, VEL_ACCENT, VEL_GHOST, VEL_NORMAL, VEL_OFF,
+  audibleTracks, resizeSteps, type ProjectState, type Track,
+} from "./types";
 import { decodeProject, encodeProject } from "./project";
 import { renderProject, toWav } from "./render";
 import { MidiBridge } from "./midi";
 
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
+const ON_LEVELS = [VEL_GHOST, VEL_NORMAL, VEL_ACCENT];
 
 interface Starter {
   voice: Voice;
@@ -29,26 +33,32 @@ const STARTER: Starter[] = [
 
 let nextId = 1;
 function makeTrack(voice: Voice, hits: number[] = []): Track {
-  const steps = new Array(STEPS).fill(false);
-  for (const h of hits) steps[h] = true;
-  return { id: nextId++, voice, steps, mute: false, solo: false, gain: 0.9 };
+  const steps = new Array(BAR_STEPS * state.bars).fill(VEL_OFF);
+  for (const h of hits) steps[h] = VEL_NORMAL;
+  return { id: nextId++, voice, steps, mute: false, solo: false, gain: 0.9, pan: 0 };
 }
+
+const totalSteps = (): number => BAR_STEPS * state.bars;
+const velClass = (v: number): string =>
+  v >= VEL_ACCENT ? "accent" : v >= VEL_NORMAL ? "normal" : v > 0 ? "ghost" : "";
 
 // ── state ───────────────────────────────────────────────────────────────────────
 interface StudioState extends ProjectState {
   playing: boolean;
 }
 const state: StudioState = {
-  tracks: STARTER.map((s) => makeTrack(s.voice, s.pattern)),
+  tracks: [],
   bpm: 124,
   swing: 0,
+  bars: 1,
   playing: false,
 };
+state.tracks = STARTER.map((s) => makeTrack(s.voice, s.pattern));
 
 const STORAGE_KEY = "audx.studio.session";
 
 function snapshot(): ProjectState {
-  return { bpm: state.bpm, swing: state.swing, tracks: state.tracks };
+  return { bpm: state.bpm, swing: state.swing, bars: state.bars, tracks: state.tracks };
 }
 
 function persist(): void {
@@ -65,6 +75,7 @@ function loadSaved(): void {
   if (saved && saved.tracks.length) {
     state.bpm = saved.bpm;
     state.swing = saved.swing;
+    state.bars = saved.bars;
     state.tracks = saved.tracks;
     nextId = Math.max(0, ...state.tracks.map((t) => t.id)) + 1;
   }
@@ -125,13 +136,20 @@ function scheduleStep(step: number, time: number): void {
   const audible = audibleTracks(state.tracks);
   const swingOffset = step % 2 === 1 ? secondsPerStep() * state.swing : 0;
   for (const track of audible) {
-    if (!track.steps[step]) continue;
+    const vel = track.steps[step] ?? 0;
+    if (vel <= 0) continue;
     const src = ctx!.createBufferSource();
     src.buffer = voiceBuffer(track.voice);
     const g = ctx!.createGain();
-    g.gain.value = track.gain;
+    g.gain.value = track.gain * vel;
     src.connect(g);
-    g.connect(master);
+    if (track.pan) {
+      const pan = ctx!.createStereoPanner();
+      pan.pan.value = Math.max(-1, Math.min(1, track.pan));
+      g.connect(pan); pan.connect(master);
+    } else {
+      g.connect(master);
+    }
     src.start(time + swingOffset);
   }
   playQueue.push({ step, time: time + swingOffset });
@@ -142,7 +160,7 @@ function scheduler(): void {
   while (nextStepTime < ctx.currentTime + SCHEDULE_AHEAD) {
     scheduleStep(currentStep, nextStepTime);
     nextStepTime += secondsPerStep();
-    currentStep = (currentStep + 1) % STEPS;
+    currentStep = (currentStep + 1) % totalSteps();
   }
 }
 
@@ -192,14 +210,17 @@ function renderGrid(): void {
         <button class="mini solo ${track.solo ? "on" : ""}" title="solo">S</button>
         <input class="vol" type="range" min="0" max="1.4" step="0.05" value="${track.gain}" title="volume" />
         <button class="mini del" title="remove">✕</button>
-      </div>`;
+      </div>
+      <input class="pan" type="range" min="-1" max="1" step="0.1" value="${track.pan}" title="pan (L–R)" />`;
     row.appendChild(head);
 
     const cells = document.createElement("div");
     cells.className = "cells";
-    for (let i = 0; i < STEPS; i++) {
+    cells.style.gridTemplateColumns = `repeat(${totalSteps()}, 1fr)`;
+    for (let i = 0; i < totalSteps(); i++) {
       const cell = document.createElement("button");
-      cell.className = `cell ${track.steps[i] ? "on" : ""} ${i % 4 === 0 ? "downbeat" : ""}`;
+      const on = track.steps[i] > 0;
+      cell.className = `cell ${on ? "on " + velClass(track.steps[i]) : ""} ${i % 4 === 0 ? "downbeat" : ""} ${i % BAR_STEPS === 0 && i > 0 ? "barline" : ""}`;
       cell.dataset.step = String(i);
       cells.appendChild(cell);
     }
@@ -212,32 +233,48 @@ function trackById(id: number): Track | undefined {
   return state.tracks.find((t) => t.id === id);
 }
 
-// event delegation on the grid
-let painting: boolean | null = null;
-grid.addEventListener("pointerdown", (e) => {
+function paintCell(cell: HTMLElement, track: Track, step: number, value: number): void {
+  track.steps[step] = value;
+  cell.className = `cell ${value > 0 ? "on " + velClass(value) : ""} ${step % 4 === 0 ? "downbeat" : ""} ${step % BAR_STEPS === 0 && step > 0 ? "barline" : ""}`;
+}
+function cellCtx(e: Event): { cell: HTMLElement; track: Track; step: number } | null {
   const cell = (e.target as HTMLElement).closest(".cell") as HTMLElement | null;
-  if (!cell) return;
-  const id = Number((cell.closest(".row") as HTMLElement).dataset.id);
-  const step = Number(cell.dataset.step);
-  const track = trackById(id);
-  if (!track) return;
-  painting = !track.steps[step];
-  track.steps[step] = painting;
-  cell.classList.toggle("on", painting);
-  if (painting) audition(track.voice); // audition the hit
+  if (!cell) return null;
+  const track = trackById(Number((cell.closest(".row") as HTMLElement).dataset.id));
+  if (!track) return null;
+  return { cell, track, step: Number(cell.dataset.step) };
+}
+
+// event delegation on the grid
+let painting: number | null = null; // the velocity we're painting (0 = erasing)
+grid.addEventListener("pointerdown", (e) => {
+  if ((e as PointerEvent).button === 2) return; // right-click handled below
+  const c = cellCtx(e);
+  if (!c) return;
+  painting = c.track.steps[c.step] > 0 ? VEL_OFF : VEL_NORMAL;
+  paintCell(c.cell, c.track, c.step, painting);
+  if (painting > 0) audition(c.track.voice);
 });
 grid.addEventListener("pointerover", (e) => {
   if (painting === null) return;
-  const cell = (e.target as HTMLElement).closest(".cell") as HTMLElement | null;
-  if (!cell) return;
-  const id = Number((cell.closest(".row") as HTMLElement).dataset.id);
-  const step = Number(cell.dataset.step);
-  const track = trackById(id);
-  if (!track) return;
-  track.steps[step] = painting;
-  cell.classList.toggle("on", painting);
+  const c = cellCtx(e);
+  if (c) paintCell(c.cell, c.track, c.step, painting);
 });
 window.addEventListener("pointerup", () => { if (painting !== null) persist(); painting = null; });
+
+// right-click an on-cell to cycle ghost → normal → accent
+grid.addEventListener("contextmenu", (e) => {
+  const c = cellCtx(e);
+  if (!c) return;
+  e.preventDefault();
+  if (c.track.steps[c.step] <= 0) { paintCell(c.cell, c.track, c.step, VEL_GHOST); }
+  else {
+    const idx = ON_LEVELS.findIndex((l) => Math.abs(l - c.track.steps[c.step]) < 1e-6);
+    paintCell(c.cell, c.track, c.step, ON_LEVELS[(idx + 1) % ON_LEVELS.length]);
+  }
+  audition(c.track.voice);
+  persist();
+});
 
 grid.addEventListener("change", (e) => {
   const el = e.target as HTMLElement;
@@ -246,6 +283,7 @@ grid.addEventListener("change", (e) => {
   if (!track) return;
   if (el.classList.contains("voice")) track.voice = (el as HTMLSelectElement).value as Voice;
   if (el.classList.contains("vol")) track.gain = Number((el as HTMLInputElement).value);
+  if (el.classList.contains("pan")) track.pan = Number((el as HTMLInputElement).value);
   persist();
 });
 grid.addEventListener("click", (e) => {
@@ -275,7 +313,7 @@ function animate(): void {
     document.querySelectorAll(`.cell[data-step="${step}"]`).forEach((el) => el.classList.add("playhead"));
     // light the Push 2 pads for voices that just fired
     for (const track of audibleTracks(state.tracks)) {
-      if (track.steps[step]) midi.flashVoice(track.voice);
+      if (track.steps[step] > 0) midi.flashVoice(track.voice);
     }
   }
   midi.tick();
@@ -294,7 +332,7 @@ function animate(): void {
 function toDSL(): string {
   return state.tracks
     .map((t) => {
-      const grid = t.steps.map((s) => (s ? "1" : "0")).join("");
+      const grid = t.steps.map((s) => (s > 0 ? "1" : "0")).join("");
       const mods = t.mute ? " | vel 0" : "";
       return `${t.voice} [${grid}]${mods}`;
     })
@@ -304,7 +342,14 @@ function toDSL(): string {
 function wireToolbar(): void {
   $("#play").addEventListener("click", togglePlay);
   $("#clear").addEventListener("click", () => {
-    state.tracks.forEach((t) => t.steps.fill(false));
+    state.tracks.forEach((t) => t.steps.fill(VEL_OFF));
+    renderGrid(); persist();
+  });
+
+  const bars = $<HTMLSelectElement>("#bars");
+  bars.addEventListener("change", () => {
+    state.bars = Number(bars.value);
+    for (const t of state.tracks) t.steps = resizeSteps(t.steps, totalSteps());
     renderGrid(); persist();
   });
   $("#add").addEventListener("click", () => {
@@ -382,6 +427,7 @@ function syncTransportInputs(): void {
   $("#bpm-val").textContent = String(state.bpm);
   swing.value = String(Math.round(state.swing * 100));
   $("#swing-val").textContent = `${Math.round(state.swing * 100)}%`;
+  $<HTMLSelectElement>("#bars").value = String(state.bars);
 }
 
 loadSaved();

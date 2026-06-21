@@ -1,10 +1,11 @@
 /**
  * Offline render of a studio session to a stereo buffer + WAV — for "export".
  * Reuses the native synth and the same timing the live scheduler uses (16th-note
- * steps with a swing push on odd 16ths), so the file matches what you hear.
+ * steps with a swing push on odd 16ths), including per-step velocity and pan, so
+ * the file matches what you hear.
  */
 import { synthVoice, type Voice } from "./synth";
-import { STEPS, audibleTracks, type ProjectState } from "./types";
+import { BAR_STEPS, audibleTracks, panGains, type ProjectState } from "./types";
 
 export interface RenderResult {
   left: Float32Array;
@@ -13,10 +14,10 @@ export interface RenderResult {
   sampleRate: number;
 }
 
-/** Render `bars` loops of the session to a normalized stereo buffer. */
-export function renderProject(state: ProjectState, bars = 2, sampleRate = 48000): RenderResult {
+/** Render `loops` full repeats of the session to a normalized stereo buffer. */
+export function renderProject(state: ProjectState, loops = 2, sampleRate = 48000): RenderResult {
   const spb = 60.0 / Math.max(20, state.bpm) / 4.0; // seconds per 16th step
-  const totalSteps = bars * STEPS;
+  const totalSteps = loops * state.bars * BAR_STEPS;
   const frames = Math.ceil((totalSteps * spb + 1.0) * sampleRate); // +1s tail
   const left = new Float32Array(frames);
   const right = new Float32Array(frames);
@@ -29,25 +30,30 @@ export function renderProject(state: ProjectState, bars = 2, sampleRate = 48000)
   };
 
   const audible = audibleTracks(state.tracks);
+  const stepsPerLoop = state.bars * BAR_STEPS;
   for (let s = 0; s < totalSteps; s++) {
-    const step = s % STEPS;
+    const step = s % stepsPerLoop;
     const swing = step % 2 === 1 ? spb * state.swing : 0;
     const start = Math.round((s * spb + swing) * sampleRate);
     for (const track of audible) {
-      if (!track.steps[step]) continue;
+      const vel = track.steps[step] ?? 0;
+      if (vel <= 0) continue;
       const buf = voiceBuf(track.voice);
-      const g = track.gain;
+      const [lg, rg] = panGains(track.pan);
+      const g = track.gain * vel;
       const end = Math.min(start + buf.length, frames);
       for (let i = start, j = 0; i < end; i++, j++) {
         const v = buf[j] * g;
-        left[i] += v;
-        right[i] += v;
+        left[i] += v * lg;
+        right[i] += v * rg;
       }
     }
   }
 
   let peak = 0;
-  for (let i = 0; i < frames; i++) peak = Math.max(peak, Math.abs(left[i]));
+  for (let i = 0; i < frames; i++) {
+    peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+  }
   if (peak > 1.0) {
     const inv = 1.0 / peak;
     for (let i = 0; i < frames; i++) { left[i] *= inv; right[i] *= inv; }

@@ -94,7 +94,9 @@ play voices and drive the sequencer's transport. **Push 2 pad LEDs** port direct
 lights up in-browser on Chrome/Edge. The sequencer flashes pads as it plays.
 
 ### Phase 3 — Parity & sharing *(incremental)*
-- **M3.1 Mixer** — per-track mute/solo/volume ✅ (in the studio). Pan still to do.
+- **M3.1 Mixer** — ✅ per-track mute/solo/volume **and pan** (equal-power, matches
+  `StereoPannerNode`; tested in `render.ts`). Plus **per-step velocity/accents**
+  (ghost/normal/accent, right-click to cycle) and **multi-bar patterns** (1/2/4).
 - **M3.2 Songs** — port the `Song`/section model; render/arrange in-browser.
 - **M3.3 Projects** — ✅ *shipped.* `localStorage` autosave + **share links** that
   encode the whole session in the URL hash (no backend) — `web/src/project.ts`,

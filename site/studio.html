@@ -65,6 +65,8 @@
     .mini.solo.on { background: var(--secondary); color: #14210a; border-color: var(--secondary); }
     .vol { width: 56px; accent-color: var(--secondary); }
     .mini.del { margin-left: auto; }
+    .pan { width: 100%; accent-color: var(--accent); height: 3px; }
+    #bars { font-family: var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.2rem 0.3rem; }
 
     .cells { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; }
     .cell {
@@ -79,6 +81,9 @@
       border-color: var(--primary);
       box-shadow: 0 0 10px rgba(212, 165, 116, 0.35);
     }
+    .cell.on.ghost { opacity: 0.5; }
+    .cell.on.accent { box-shadow: 0 0 14px rgba(232, 166, 194, 0.6); filter: brightness(1.18); }
+    .cell.barline { margin-left: 6px; }
     .cell.on.downbeat { background: linear-gradient(160deg, var(--accent), var(--primary)); }
     .cell.playhead { outline: 2px solid var(--secondary); outline-offset: 1px; }
     .cell.on.playhead { box-shadow: 0 0 16px rgba(168, 192, 135, 0.8); transform: scale(1.06); }
@@ -113,6 +118,13 @@
       <button id="clear" class="btn">clear</button>
       <div class="knob">bpm <input id="bpm" type="range" min="70" max="180" step="1" value="124" /> <b id="bpm-val">124</b></div>
       <div class="knob">swing <input id="swing" type="range" min="0" max="60" step="1" value="0" /> <b id="swing-val">0%</b></div>
+      <div class="knob">bars
+        <select id="bars" title="pattern length">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="4">4</option>
+        </select>
+      </div>
       <div class="spacer"></div>
       <div class="meter" title="master output"><div id="meter-fill"></div></div>
     </div>
@@ -129,8 +141,10 @@
     <pre id="dsl-out"></pre>
 
     <p class="hint">
-      Click cells to build a beat — drag to paint a row. <kbd>Space</kbd> plays/stops.
-      <b>M</b> mutes, <b>S</b> solos, the slider sets a track's volume. Everything you
+      Click cells to build a beat — drag to paint a row, <b>right-click</b> a cell to
+      cycle its accent (ghost → normal → accent). <kbd>Space</kbd> plays/stops.
+      <b>bars</b> sets the pattern length; <b>M</b> mutes, <b>S</b> solos, and the two
+      sliders set a track's volume and stereo pan. Everything you
       hear is the same procedural synth the <code>audx</code> CLI uses — and
       <em>copy as audx DSL</em> gives you a pattern you can paste straight into
       <code>audx</code>. <em>share link</em> puts the whole groove in a URL to send
