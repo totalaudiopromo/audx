@@ -28,14 +28,17 @@ STEPS_PER_BAR = 16
 
 # (name, dsl, hex colour) — these are the SAME patterns we render to audio,
 # so the grid and the sound are guaranteed to agree.
+# Monochrome by design — every track is the same warm off-white; the only
+# colour in the piece is a single amber accent applied to the play position.
+_INK = "#ececea"
 TRACKS = [
-    ("kick", "kick 4/4", "#ffb02e"),  # amber
-    ("clap", "clap 2/8", "#ff2fb0"),  # magenta
-    ("hats", "hh 16x8 | swing 10%", "#b6ff3d"),  # lime
-    ("oh", "oh [0.0.1.0.0.0.1.0]", "#34f5ff"),  # cyan
-    ("bass", "bass e(5,16) | tune -7st", "#5b8cff"),  # electric blue
-    ("stab", "stab [1.0.0.0.0.0.1.0] | tune 3st", "#b86bff"),  # violet
-    ("perc", "perc e(7,16,2)", "#ff6a3d"),  # hot orange
+    ("kick", "kick 4/4", _INK),
+    ("clap", "clap 2/8", _INK),
+    ("hats", "hh 16x8 | swing 10%", _INK),
+    ("oh", "oh [0.0.1.0.0.0.1.0]", _INK),
+    ("bass", "bass e(5,16) | tune -7st", _INK),
+    ("stab", "stab [1.0.0.0.0.0.1.0] | tune 3st", _INK),
+    ("perc", "perc e(7,16,2)", _INK),
 ]
 
 ROOT = Path(__file__).resolve().parent / "remotion"
