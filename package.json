@@ -1,6 +1,6 @@
 {
   "name": "audx",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Terminal-native DAW: pattern sequencing, stem mixing, VST hosting, live coding workflow",
   "main": "src/audx/cli.py",
   "bin": {

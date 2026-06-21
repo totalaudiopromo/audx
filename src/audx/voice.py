@@ -23,7 +23,7 @@ def status() -> VoiceStatus:
     try:
         import importlib
 
-        importlib.import_module("whispercpp")  # type: ignore[import-not-found]
+        importlib.import_module("whispercpp")
         return VoiceStatus(True, "whispercpp installed")
     except ImportError:
         return VoiceStatus(False, "install whispercpp for on-device transcription")

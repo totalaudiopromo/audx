@@ -40,6 +40,7 @@ midi_app = typer.Typer(help="MIDI clock out, input recording")
 macro_app = typer.Typer(help="Macro registers (vim-style qa…q…@a)")
 slot_app = typer.Typer(help="Pattern slots A/B/C/D")
 export_app = typer.Typer(help="Export to other formats")
+song_app = typer.Typer(help="Multi-section song arrangement (intro/verse/drop/outro)")
 app.add_typer(pattern_app, name="pattern")
 app.add_typer(samples_app, name="samples")
 app.add_typer(samples_app, name="stems")  # spec uses `audx stems`
@@ -56,6 +57,7 @@ app.add_typer(midi_app, name="midi")
 app.add_typer(macro_app, name="macro")
 app.add_typer(slot_app, name="slot")
 app.add_typer(export_app, name="export")
+app.add_typer(song_app, name="song")
 pattern_app.add_typer(slot_app, name="slot")  # `audx pattern slot ...`
 
 
@@ -221,6 +223,135 @@ def doctor() -> None:
     typer.echo(f"Config dir: {CONFIG_DIR}")
 
 
+@app.command()
+def demo(
+    output: Path = typer.Argument(Path("audx-demo.wav"), help="Output WAV path"),
+    bpm: float = typer.Option(124.0, "--bpm", help="Tempo"),
+    bars: int = typer.Option(4, "--bars", help="Length in bars"),
+) -> None:
+    """Render a full demo beat with the built-in synth kit — zero setup required.
+
+    No samples, no audio device, no config. Proves audx makes music in one command:
+
+        audx demo loop.wav && open loop.wav
+    """
+    from audx.arrangement import Arrangement, render_arrangement
+
+    tracks = [
+        ("kick", "kick 4/4 | channel 0"),
+        ("sub", "sub e(3,8) | channel 1 | vel 0.9 | tune -5st"),
+        ("clap", "clap 2/8 | channel 2 | vel 0.85"),
+        ("hats", "hh 16x8 | channel 3 | vel 0.5 | swing 12% | humanize 6%"),
+        ("openhat", "oh [0.0.1.0.0.0.1.0] | channel 4 | vel 0.4"),
+        ("perc", "perc e(5,16,2) | channel 5 | vel 0.55"),
+    ]
+    arrangement = Arrangement(bpm=bpm)
+    for name, dsl in tracks:
+        pattern = Pattern(name=name, dsl=dsl)
+        pattern.parse_dsl()
+        arrangement.add(pattern, start_bar=0, bars=bars)
+
+    library = SampleLibrary(SAMPLES_DIR)  # empty/missing → synth kit fallback
+    typer.echo("  audx · demo")
+    for name, dsl in tracks:
+        typer.echo(f"    ♪ {name:<8} {dsl}")
+    path = render_arrangement(arrangement, library, output)
+    typer.echo(f"  ✓ rendered {bars} bars @ {bpm:g} BPM → {path}")
+
+
+@app.command()
+def jam(
+    port: str = typer.Option("", "--port", "-p", help="MIDI input port (default: first found)"),
+    chromatic: bool = typer.Option(
+        False, "--chromatic", help="Play one melodic voice across the keys (vs. drum pads)"
+    ),
+    voice: str = typer.Option("keys", "--voice", help="Melodic voice for --chromatic mode"),
+    bpm: float = typer.Option(124.0, "--bpm", help="Engine tempo"),
+    no_lights: bool = typer.Option(False, "--no-lights", help="Don't light Push 2 pads"),
+) -> None:
+    """Play the synth kit live from a MIDI controller or Push 2 — instant sound.
+
+    Drum pads trigger drums (GM note map; every pad makes a sound). On a Push 2 the
+    pads light up to show the kit and flash when you hit them. Use ``--chromatic``
+    to play a melodic voice across a keyboard:
+
+        audx jam                      # drum pads → kick/snare/hat/...
+        audx jam --chromatic          # keyboard plays the 'keys' voice
+        audx jam --chromatic --voice bass
+    """
+    from audx.live import run_jam
+    from audx.midi import list_inputs
+    from audx.push2 import open_push2_lights, push2_input_name, push2_pad_layout
+
+    inputs = list_inputs()
+    if not inputs:
+        typer.echo("No MIDI inputs found. Plug in a controller (or run `audx midi list`).", err=True)
+        raise typer.Exit(1)
+
+    # Prefer a Push 2 input if one is present and the user didn't pick a port.
+    in_port = port or push2_input_name() or inputs[0]
+    typer.echo(f"  MIDI in: {in_port}")
+
+    engine = init_engine()
+    engine.set_bpm(bpm)
+    try:
+        engine.start()
+    except RuntimeError as exc:
+        typer.echo(f"  ✗ {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+    # Light the Push 2 kit (drums mode only — chromatic doesn't map to the kit).
+    lights = None
+    pad_layout = None
+    if not chromatic and not no_lights:
+        lights = open_push2_lights()
+        if lights is not None:
+            pad_layout = push2_pad_layout()
+            lights.setup(pad_layout)
+            typer.echo("  ✓ Push 2 pads lit — hit them!")
+
+    mode = "chromatic" if chromatic else "drums"
+    typer.echo(
+        f"  ♪ jam mode: {mode}" + (f" ({voice})" if chromatic else "  (hit some pads!)")
+    )
+    typer.echo("  Ctrl-C to stop.")
+
+    def _feedback(note: int, v: str, vel: int) -> None:
+        bar = "█" * max(1, vel // 12)
+        typer.echo(f"    {note:>3} → {v:<8} {bar}")
+
+    try:
+        run_jam(
+            engine,
+            port_name=in_port,
+            mode=mode,
+            voice=voice,
+            on_trigger=_feedback,
+            pad_layout=pad_layout,
+            lights=lights,
+        )
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if lights is not None:
+            lights.close()
+        engine.stop()
+        typer.echo("\n  stopped.")
+
+
+@app.command()
+def synths() -> None:
+    """List the built-in synth voices (usable in any pattern, no samples needed)."""
+    from audx.synth import VOICE_ALIASES, list_voices
+
+    typer.echo("Built-in synth voices:")
+    for voice in list_voices():
+        aliases = sorted(a for a, target in VOICE_ALIASES.items() if target == voice and a.strip())
+        suffix = f"  (aka {', '.join(aliases)})" if aliases else ""
+        typer.echo(f"  · {voice}{suffix}")
+    typer.echo("\nUse any of these as an instrument, e.g.  audx render \"cowbell e(5,8)\"")
+
+
 @pattern_app.command("create")
 def pattern_create(
     name: str = typer.Argument(..., help="Pattern name"),
@@ -326,7 +457,9 @@ def projects_list_flat() -> None:
 def render_pattern(
     dsl: str = typer.Argument(..., help="Pattern DSL to render"),
     output: Path = typer.Option(Path("render.wav"), "--output", "-o", help="Output WAV path"),
-    sample: Path = typer.Option(..., "--sample", help="Sample file to trigger"),
+    sample: Path | None = typer.Option(
+        None, "--sample", help="Sample file to trigger (omit to use the built-in synth kit)"
+    ),
     bpm: float = typer.Option(128.0, "--bpm", help="BPM"),
     bars: int = typer.Option(4, "--bars", help="Number of bars"),
     stems: bool = typer.Option(False, "--stems", help="Render each pattern to its own WAV"),
@@ -334,13 +467,20 @@ def render_pattern(
 ) -> None:
     """Render a single pattern to WAV offline.
 
-    With ``--variations N`` renders N copies suffixed ``_v01.wav``..``_vNN.wav``.
-    With ``--stems`` writes one file per active in-process pattern.
+    With no ``--sample`` the built-in synth kit is used, so ``audx render "kick 4/4"``
+    makes sound with zero setup. With ``--variations N`` renders N copies suffixed
+    ``_v01.wav``..``_vNN.wav``. With ``--stems`` writes one file per active pattern.
     """
     from audx.arrangement import Arrangement, render_arrangement
 
-    library = SampleLibrary(sample.parent)
-    library.build_index(recursive=False)
+    if sample is not None:
+        library = SampleLibrary(sample.parent)
+        library.build_index(recursive=False)
+        name = sample.stem
+    else:
+        # No sample: empty library so the renderer falls back to the synth kit.
+        library = SampleLibrary(SAMPLES_DIR)
+        name = dsl.split()[0] if dsl.split() else "kick"
 
     if stems:
         engine = get_pattern_engine()
@@ -359,7 +499,7 @@ def render_pattern(
 
     if variations and variations > 0:
         for i in range(1, variations + 1):
-            pat = Pattern(name=sample.stem, dsl=dsl)
+            pat = Pattern(name=name, dsl=dsl)
             pat.parse_dsl()
             arrangement = Arrangement(bpm=bpm)
             arrangement.add(pat, start_bar=0, bars=bars)
@@ -368,12 +508,71 @@ def render_pattern(
             typer.echo(f"  ✓ {target}")
         return
 
-    pattern = Pattern(name=sample.stem, dsl=dsl)
+    pattern = Pattern(name=name, dsl=dsl)
     pattern.parse_dsl()
     arrangement = Arrangement(bpm=bpm)
     arrangement.add(pattern, start_bar=0, bars=bars)
     path = render_arrangement(arrangement, library, output)
     typer.echo(f"Rendered {path}")
+
+
+def _load_song(spec_path: Path):
+    """Load a song JSON spec into a Song. Shape:
+
+    {"bpm": 124, "sections": {"intro": {"patterns": ["kick 4/4", ...], "bars": 8}},
+     "sequence": ["intro", "verse", "drop", "verse", "drop", "outro"]}
+    """
+    import json
+
+    from audx.arrangement import Song
+
+    data = json.loads(spec_path.read_text())
+    return Song.from_spec(
+        bpm=float(data.get("bpm", 124.0)),
+        sections=data.get("sections", {}),
+        sequence=list(data.get("sequence", [])),
+    )
+
+
+@song_app.command("render")
+def song_render(
+    spec: Path = typer.Argument(..., help="Song spec JSON (bpm / sections / sequence)"),
+    output: Path = typer.Option(Path("song.wav"), "--output", "-o", help="Output WAV path"),
+    sample_rate: int = typer.Option(44100, "--sample-rate", help="Output sample rate"),
+) -> None:
+    """Render a multi-section song to a single WAV (built-in synth kit by default)."""
+    if not spec.exists():
+        typer.echo(f"Song spec not found: {spec}", err=True)
+        raise typer.Exit(1)
+    from audx.arrangement import render_song
+    from audx.sampler import get_sample_library
+
+    try:
+        song = _load_song(spec)
+    except (KeyError, ValueError) as exc:
+        typer.echo(f"Bad song spec: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    path = render_song(song, get_sample_library(), output, sample_rate=sample_rate)
+    typer.echo(f"  ✓ rendered {song.total_bars} bars @ {song.bpm:g} BPM → {path}")
+
+
+@song_app.command("info")
+def song_info(
+    spec: Path = typer.Argument(..., help="Song spec JSON"),
+) -> None:
+    """Print the resolved section timeline (section → start bar) and total length."""
+    if not spec.exists():
+        typer.echo(f"Song spec not found: {spec}", err=True)
+        raise typer.Exit(1)
+    try:
+        song = _load_song(spec)
+        timeline = song.timeline()
+    except (KeyError, ValueError) as exc:
+        typer.echo(f"Bad song spec: {exc}", err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"  song · {song.bpm:g} BPM · {song.total_bars} bars")
+    for section, start_bar in timeline:
+        typer.echo(f"    bar {start_bar:>3}  {section.name:<10} ({section.bars} bars)")
 
 
 @app.command("diff")
@@ -502,11 +701,11 @@ def track_rm(name: str = typer.Argument(..., help="Track / pattern name")) -> No
     typer.echo(f"  ✓ removed '{name}'" if removed else f"  · not found: {name}")
 
 
-@mix_app.command("set")
+@mix_app.command("set", context_settings={"ignore_unknown_options": True})
 def mix_set(
     channel: int = typer.Argument(..., help="Channel index (0-based)"),
     param: str = typer.Argument(..., help="gain | mute"),
-    value: str = typer.Argument(..., help="dB for gain, on/off for mute"),
+    value: str = typer.Argument(..., help="dB for gain (e.g. -3), on/off for mute"),
 ) -> None:
     """Set a mixer parameter (spec §06)."""
     engine = get_engine() or init_engine()
@@ -569,6 +768,28 @@ def push2_map() -> None:
 
     for control in list_push2_map():
         typer.echo(f"{control.name}\t{control.midi_type}\t{control.number}\t{control.description}")
+
+
+@push2_app.command("lights")
+def push2_lights() -> None:
+    """Light up the Push 2 drum kit (no audio) — a quick LED check."""
+    import time
+
+    from audx.push2 import open_push2_lights, push2_pad_layout
+
+    lights = open_push2_lights()
+    if lights is None:
+        typer.echo("No Push 2 output found. Connect it and check `audx midi list`.", err=True)
+        raise typer.Exit(1)
+    layout = push2_pad_layout()
+    lights.setup(layout)
+    typer.echo(f"  ✓ lit {len(layout)} pads. Ctrl-C to clear.")
+    try:
+        while True:
+            time.sleep(0.2)
+    except KeyboardInterrupt:
+        lights.close()
+        typer.echo("\n  cleared.")
 
 
 @heartmula_app.command("status")

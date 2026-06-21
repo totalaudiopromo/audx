@@ -1,0 +1,22 @@
+{
+  "name": "audx-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remotion promo video for audx — the terminal-native DAW",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render AudxPromo out/audx-promo.mp4",
+    "render-gif": "remotion render AudxPromo out/audx-promo.gif --codec=gif",
+    "still": "remotion still AudxPromo out/poster.png --frame=120"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}
