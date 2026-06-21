@@ -6,6 +6,7 @@
  */
 import { synthVoice, type Voice } from "./synth";
 import { BAR_STEPS, audibleTracks, panGains, type ProjectState, type Track } from "./types";
+import { timeline, totalBars, type Song } from "./song";
 
 export interface RenderResult {
   left: Float32Array;
@@ -116,6 +117,48 @@ export function renderStems(
       wav: toWav({ left, right, frames: t.frames, sampleRate }),
     };
   });
+}
+
+/** Render a whole Song (sections laid out along the timeline) to a stereo buffer. */
+export function renderSong(song: Song, sampleRate = 48000, sampleProvider?: SampleProvider): RenderResult {
+  const spb = 60.0 / Math.max(20, song.bpm) / 4.0;
+  const total16 = totalBars(song) * BAR_STEPS;
+  const frames = Math.max(1, Math.ceil((total16 * spb + 1.0) * sampleRate));
+  const left = new Float32Array(frames);
+  const right = new Float32Array(frames);
+  const voiceBuf = makeVoiceCache(sampleRate);
+
+  for (const { scene, startBar } of timeline(song)) {
+    for (const track of audibleTracks(scene.tracks)) {
+      const [lg, rg] = panGains(track.pan);
+      const sample = track.sampleRef && sampleProvider ? sampleProvider(track.sampleRef) : null;
+      const len = scene.bars * BAR_STEPS;
+      for (let s = 0; s < len; s++) {
+        const vel = track.steps[s] ?? 0;
+        if (vel <= 0) continue;
+        const swing = s % 2 === 1 ? spb * scene.swing : 0;
+        const start = Math.round(((startBar * BAR_STEPS + s) * spb + swing) * sampleRate);
+        const g = track.gain * vel;
+        if (sample) {
+          const end = Math.min(start + sample.left.length, frames);
+          for (let i = start, j = 0; i < end; i++, j++) {
+            left[i] += sample.left[j] * g * lg;
+            right[i] += sample.right[j] * g * rg;
+          }
+        } else {
+          const buf = voiceBuf(track.voice);
+          const end = Math.min(start + buf.length, frames);
+          for (let i = start, j = 0; i < end; i++, j++) {
+            const v = buf[j] * g;
+            left[i] += v * lg;
+            right[i] += v * rg;
+          }
+        }
+      }
+    }
+  }
+  normalize(left, right, frames);
+  return { left, right, frames, sampleRate };
 }
 
 /** Encode a stereo render as a 16-bit PCM WAV. */

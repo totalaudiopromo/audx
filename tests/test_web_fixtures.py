@@ -51,3 +51,11 @@ def test_push2_fixtures_current():
     assert committed == gen.build_push2_fixtures(), (
         "web/fixtures/push2.json is stale — run scripts/gen_web_fixtures.py"
     )
+
+
+def test_song_fixtures_current():
+    gen = _load_generator()
+    committed = json.loads((FIXTURES / "song.json").read_text())
+    assert committed == gen.build_song_fixtures(), (
+        "web/fixtures/song.json is stale — run scripts/gen_web_fixtures.py"
+    )

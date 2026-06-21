@@ -175,6 +175,48 @@ def build_push2_fixtures() -> dict:
     }
 
 
+def build_song_fixtures() -> list[dict]:
+    """Song.timeline() parity — section → start_bar offsets for a sequence."""
+    from audx.arrangement import Song
+
+    cases = []
+    specs = [
+        {
+            "bpm": 120,
+            "sections": {
+                "intro": {"patterns": ["hh 16x8"], "bars": 2},
+                "drop": {"patterns": ["kick 4/4", "bass e(5,16)"], "bars": 4},
+            },
+            "sequence": ["intro", "drop", "drop"],
+        },
+        {
+            "bpm": 140,
+            "sections": {
+                "a": {"patterns": ["kick 4/4"], "bars": 1},
+                "b": {"patterns": ["clap 2/8"], "bars": 3},
+            },
+            "sequence": ["a", "b", "a"],
+        },
+    ]
+    for spec in specs:
+        song = Song.from_spec(
+            bpm=float(spec["bpm"]),
+            sections=spec["sections"],
+            sequence=list(spec["sequence"]),
+        )
+        cases.append(
+            {
+                "spec": spec,
+                "total_bars": song.total_bars,
+                "timeline": [
+                    {"name": sec.name, "start_bar": start, "bars": sec.bars}
+                    for sec, start in song.timeline()
+                ],
+            }
+        )
+    return cases
+
+
 def main() -> None:
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
     (FIXTURE_DIR / "dsl.json").write_text(
@@ -188,6 +230,9 @@ def main() -> None:
     )
     (FIXTURE_DIR / "push2.json").write_text(
         json.dumps(build_push2_fixtures(), indent=2) + "\n"
+    )
+    (FIXTURE_DIR / "song.json").write_text(
+        json.dumps(build_song_fixtures(), indent=2) + "\n"
     )
     print(f"wrote fixtures to {FIXTURE_DIR}")
 

@@ -103,6 +103,20 @@
       color: var(--secondary); padding: 0.9rem 1rem; margin-top: 1rem; overflow-x: auto;
     }
     #dsl-out.show { display: block; }
+    .song { margin-top: 1.6rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+    .song > summary { cursor: pointer; padding: 0.8rem 1.1rem; font-weight: 700; color: var(--primary); }
+    .song-body { padding: 0 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+    .song-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+    .song-label { color: var(--muted); font-size: 0.82rem; }
+    .chips-row { display: flex; flex-wrap: wrap; gap: 0.4rem; min-height: 1.8rem; }
+    .scene-chip, .seq-chip {
+      cursor: pointer; font-family: var(--mono); font-size: 0.8rem;
+      border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.7rem;
+      background: var(--surface); color: var(--text);
+    }
+    .scene-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .seq-chip { background: var(--bg); color: var(--secondary); }
+    .seq-chip:hover { border-color: var(--accent); color: var(--accent); }
     @media (max-width: 640px) {
       .row { grid-template-columns: 1fr; }
       .cell { min-height: 26px; }
@@ -136,6 +150,27 @@
     </div>
 
     <div id="grid"></div>
+
+    <details class="song" id="song-panel">
+      <summary>song — chain scenes into an arrangement</summary>
+      <div class="song-body">
+        <div class="song-row">
+          <button id="save-scene" class="btn">save grid as scene</button>
+          <span class="song-label">scenes (click to add to the sequence):</span>
+        </div>
+        <div id="scene-chips" class="chips-row"></div>
+        <div class="song-row"><span class="song-label">sequence:</span></div>
+        <div id="seq-chips" class="chips-row"></div>
+        <div class="song-row">
+          <button id="song-play" class="btn">▶ play song</button>
+          <button id="song-stop" class="btn">■ stop</button>
+          <button id="song-wav" class="btn">download song wav</button>
+          <button id="song-export" class="btn">export song JSON</button>
+          <label class="btn" title="import an audx song JSON">import JSON<input id="song-import" type="file" accept="application/json,.json" hidden /></label>
+          <span id="song-status" class="midi-status"></span>
+        </div>
+      </div>
+    </details>
 
     <div class="foot">
       <button id="export" class="btn">copy as audx DSL</button>

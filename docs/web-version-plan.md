@@ -97,7 +97,14 @@ lights up in-browser on Chrome/Edge. The sequencer flashes pads as it plays.
 - **M3.1 Mixer** — ✅ per-track mute/solo/volume **and pan** (equal-power, matches
   `StereoPannerNode`; tested in `render.ts`). Plus **per-step velocity/accents**
   (ghost/normal/accent, right-click to cycle) and **multi-bar patterns** (1/2/4).
-- **M3.2 Songs** — port the `Song`/section model; render/arrange in-browser.
+- **M3.2 Songs** — ✅ *shipped.* `web/src/song.ts` ports `Section`/`Song` +
+  `timeline()`, with **CLI-compatible Song JSON** import/export (the DSL bridge reuses
+  the tested `dsl.ts` parser + `trackToDSL`), so a web song plays with
+  `audx song render` and CLI songs open in the studio. `renderSong` lays sections out
+  on the timeline (bounced to play/WAV). Song panel UI: save scene, build sequence,
+  play/export. Tested: timeline parity vs Python fixture, JSON round-trip, section
+  placement. *Caveat:* accents are binary in CLI DSL (lossy on a CLI round-trip);
+  multi-bar scenes export as tiled 1-bar patterns.
 - **M3.3 Projects** — ✅ *shipped.* `localStorage` autosave + **share links** that
   encode the whole session in the URL hash (no backend) — `web/src/project.ts`,
   round-trip tested (`web/tests/project.test.ts`).

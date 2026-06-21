@@ -1,0 +1,87 @@
+[
+  {
+    "spec": {
+      "bpm": 120,
+      "sections": {
+        "intro": {
+          "patterns": [
+            "hh 16x8"
+          ],
+          "bars": 2
+        },
+        "drop": {
+          "patterns": [
+            "kick 4/4",
+            "bass e(5,16)"
+          ],
+          "bars": 4
+        }
+      },
+      "sequence": [
+        "intro",
+        "drop",
+        "drop"
+      ]
+    },
+    "total_bars": 10,
+    "timeline": [
+      {
+        "name": "intro",
+        "start_bar": 0,
+        "bars": 2
+      },
+      {
+        "name": "drop",
+        "start_bar": 2,
+        "bars": 4
+      },
+      {
+        "name": "drop",
+        "start_bar": 6,
+        "bars": 4
+      }
+    ]
+  },
+  {
+    "spec": {
+      "bpm": 140,
+      "sections": {
+        "a": {
+          "patterns": [
+            "kick 4/4"
+          ],
+          "bars": 1
+        },
+        "b": {
+          "patterns": [
+            "clap 2/8"
+          ],
+          "bars": 3
+        }
+      },
+      "sequence": [
+        "a",
+        "b",
+        "a"
+      ]
+    },
+    "total_bars": 5,
+    "timeline": [
+      {
+        "name": "a",
+        "start_bar": 0,
+        "bars": 1
+      },
+      {
+        "name": "b",
+        "start_bar": 1,
+        "bars": 3
+      },
+      {
+        "name": "a",
+        "start_bar": 4,
+        "bars": 1
+      }
+    ]
+  }
+]

@@ -12,10 +12,11 @@ import {
   audibleTracks, resizeSteps, type ProjectState, type Track,
 } from "./types";
 import { decodeProject, encodeProject } from "./project";
-import { renderProject, renderStems, toWav } from "./render";
+import { renderProject, renderSong, renderStems, toWav } from "./render";
 import { MidiBridge } from "./midi";
 import { getSample, hasSample, loadAllFromIDB, putSample, sampleStereo } from "./samples";
 import { makeZip } from "./zip";
+import { cliToSong, songToCli, type Scene, type Song } from "./song";
 
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
@@ -432,13 +433,6 @@ function wireToolbar(): void {
     setTimeout(() => ($("#share").textContent = "share link"), 1600);
   });
 
-  const download = (bytes: Uint8Array, name: string, type: string): void => {
-    const url = URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer], { type }));
-    const a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-
   $("#wav").addEventListener("click", () => {
     ensureAudio();
     download(toWav(renderProject(snapshot(), 2, ctx!.sampleRate, sampleStereo)), "audx-studio.wav", "audio/wav");
@@ -483,6 +477,119 @@ function wireToolbar(): void {
   });
 }
 
+function download(bytes: Uint8Array, name: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([bytes.buffer as ArrayBuffer], { type }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── song mode ──────────────────────────────────────────────────────────────────
+const SONG_KEY = "audx.studio.song";
+const song: Song = { bpm: 124, scenes: [], sequence: [] };
+let songSource: AudioBufferSourceNode | null = null;
+
+function persistSong(): void {
+  try { localStorage.setItem(SONG_KEY, JSON.stringify(songToCli(song))); } catch { /* ignore */ }
+}
+function loadSong(): void {
+  try {
+    const raw = localStorage.getItem(SONG_KEY);
+    if (!raw) return;
+    const loaded = cliToSong(JSON.parse(raw));
+    song.scenes = loaded.scenes;
+    song.sequence = loaded.sequence;
+  } catch { /* ignore */ }
+}
+
+function renderSongChips(): void {
+  const scenes = $("#scene-chips");
+  const seq = $("#seq-chips");
+  scenes.innerHTML = "";
+  for (const scene of song.scenes) {
+    const chip = document.createElement("button");
+    chip.className = "scene-chip";
+    chip.textContent = `${scene.name} · ${scene.bars}b`;
+    chip.title = "click: add to sequence · shift-click: load into the grid";
+    chip.onclick = (e) => {
+      if (e.shiftKey) { loadScene(scene); return; }
+      song.sequence.push(scene.name); renderSongChips(); persistSong();
+    };
+    scenes.appendChild(chip);
+  }
+  seq.innerHTML = "";
+  song.sequence.forEach((name, i) => {
+    const chip = document.createElement("button");
+    chip.className = "seq-chip";
+    chip.textContent = `${i + 1}. ${name} ✕`;
+    chip.title = "remove from sequence";
+    chip.onclick = () => { song.sequence.splice(i, 1); renderSongChips(); persistSong(); };
+    seq.appendChild(chip);
+  });
+}
+
+function loadScene(scene: Scene): void {
+  state.bars = scene.bars;
+  state.swing = scene.swing;
+  state.tracks = structuredClone(scene.tracks);
+  nextId = Math.max(0, ...state.tracks.map((t) => t.id)) + 1;
+  renderGrid(); syncTransportInputs(); persist();
+}
+
+function wireSong(): void {
+  loadSong();
+  renderSongChips();
+
+  $("#save-scene").addEventListener("click", () => {
+    const name = prompt("Scene name:", `scene ${song.scenes.length + 1}`)?.trim();
+    if (!name) return;
+    const scene: Scene = { name, bars: state.bars, swing: state.swing, tracks: structuredClone(state.tracks) };
+    const at = song.scenes.findIndex((s) => s.name === name);
+    if (at >= 0) song.scenes[at] = scene; else song.scenes.push(scene);
+    renderSongChips(); persistSong();
+  });
+
+  const stopSong = (): void => { if (songSource) { try { songSource.stop(); } catch { /* */ } songSource = null; } };
+  $("#song-play").addEventListener("click", () => {
+    if (!song.sequence.length) { $("#song-status").textContent = "add scenes to the sequence first"; return; }
+    ensureAudio();
+    stopSong();
+    song.bpm = state.bpm;
+    const r = renderSong(song, ctx!.sampleRate, sampleStereo);
+    const buf = ctx!.createBuffer(2, r.frames, r.sampleRate);
+    buf.getChannelData(0).set(r.left); buf.getChannelData(1).set(r.right);
+    songSource = ctx!.createBufferSource();
+    songSource.buffer = buf; songSource.connect(master); songSource.start();
+    $("#song-status").textContent = "playing song…";
+    songSource.onended = () => { $("#song-status").textContent = ""; };
+  });
+  $("#song-stop").addEventListener("click", () => { stopSong(); $("#song-status").textContent = ""; });
+
+  $("#song-wav").addEventListener("click", () => {
+    if (!song.sequence.length) return;
+    ensureAudio();
+    song.bpm = state.bpm;
+    download(toWav(renderSong(song, ctx!.sampleRate, sampleStereo)), "audx-song.wav", "audio/wav");
+  });
+
+  $("#song-export").addEventListener("click", () => {
+    song.bpm = state.bpm;
+    const json = JSON.stringify(songToCli(song), null, 2);
+    download(new TextEncoder().encode(json), "audx-song.json", "application/json");
+  });
+
+  $<HTMLInputElement>("#song-import").addEventListener("change", async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    try {
+      const loaded = cliToSong(JSON.parse(await file.text()));
+      song.scenes = loaded.scenes; song.sequence = loaded.sequence; song.bpm = loaded.bpm;
+      renderSongChips(); persistSong();
+      $("#song-status").textContent = `imported ${song.scenes.length} scenes`;
+    } catch { $("#song-status").textContent = "couldn't read that JSON"; }
+  });
+}
+
 function syncTransportInputs(): void {
   const bpm = $<HTMLInputElement>("#bpm");
   const swing = $<HTMLInputElement>("#swing");
@@ -496,5 +603,6 @@ function syncTransportInputs(): void {
 loadSaved();
 renderGrid();
 wireToolbar();
+wireSong();
 syncTransportInputs();
 paintTransport();
