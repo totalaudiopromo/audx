@@ -58,12 +58,18 @@ Audio. Presets, a WAV download, no server — nothing leaves the visitor's machi
 ### Phase 2 — The live instrument *(medium, ~1–2 weeks)*
 Goal: real-time play in the browser with the sequencer grid and a MIDI controller.
 
+**M2.2 — DSL parser in TS.** ✅ *shipped.* `web/src/dsl.ts` is a faithful port of
+`pattern.py` (steps + modifiers + swing). The golden-vector harness is live:
+`scripts/gen_web_fixtures.py` emits `web/fixtures/*.json` from the **real** parser;
+vitest (`web/tests/dsl.test.ts`) asserts the TS output matches within 1e-9 — 30
+cases covering every grammar branch, the `16x8`=16-hits quirk, banker's rounding in
+swing, sample aliases and modifier clamping. A Python test guards the fixtures
+against drift, and CI runs both sides (`web` job in `ci.yml`).
+
 **M2.1 — TS synth engine.** Port the ~20 voices to an `AudioWorklet` (or rendered
-buffers). *Acceptance:* a golden-vector test (generated from Python) confirms each
-TS voice matches the numpy one within tolerance.
-**M2.2 — DSL parser in TS.** Port `pattern.py` (pure string→steps). *Acceptance:*
-shared fixtures (DSL → expected steps JSON, emitted from the Python tests) pass on
-both sides.
+buffers). *Acceptance:* extend the same golden-vector harness with per-voice audio
+references (length/peak/rms + decimated waveform) so each TS voice matches the numpy
+one within tolerance. *Next up.*
 **M2.3 — Lookahead scheduler.** Web Audio sample-accurate clock (the standard
 25 ms-tick / 100 ms-lookahead pattern). *Acceptance:* steady timing at 124 BPM, no
 drift over 5 minutes.
