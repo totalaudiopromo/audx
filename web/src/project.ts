@@ -14,9 +14,11 @@ interface WireTrack {
   g: number; // gain * 100
   p: number; // pan * 100
   f: number; // flags
+  sr?: string; // sample ref (audio resolved locally; absent → synth fallback)
+  sn?: string; // sample display name
 }
 interface Wire {
-  v: 2;
+  v: 3;
   b: number; // bpm
   w: number; // swing %
   r: number; // bars
@@ -30,17 +32,21 @@ const toHex = (vel: number): string => Math.max(0, Math.min(15, Math.round(vel *
 
 function toWire(state: ProjectState): Wire {
   return {
-    v: 2,
+    v: 3,
     b: Math.round(state.bpm),
     w: Math.round(state.swing * 100),
     r: state.bars,
-    t: state.tracks.map((tr) => ({
-      i: SYNTH_VOICES.indexOf(tr.voice),
-      s: tr.steps.map(toHex).join(""),
-      g: Math.round(tr.gain * 100),
-      p: Math.round(tr.pan * 100),
-      f: (tr.mute ? FLAG_MUTE : 0) | (tr.solo ? FLAG_SOLO : 0),
-    })),
+    t: state.tracks.map((tr) => {
+      const w: WireTrack = {
+        i: SYNTH_VOICES.indexOf(tr.voice),
+        s: tr.steps.map(toHex).join(""),
+        g: Math.round(tr.gain * 100),
+        p: Math.round(tr.pan * 100),
+        f: (tr.mute ? FLAG_MUTE : 0) | (tr.solo ? FLAG_SOLO : 0),
+      };
+      if (tr.sampleRef) { w.sr = tr.sampleRef; w.sn = tr.sampleName; }
+      return w;
+    }),
   };
 }
 
@@ -62,6 +68,7 @@ function fromWire(w: Wire): ProjectState {
       solo: (t.f & FLAG_SOLO) !== 0,
       gain: t.g / 100,
       pan: (t.p ?? 0) / 100,
+      ...(t.sr ? { sampleRef: t.sr, sampleName: t.sn } : {}),
     };
   });
   return { bpm: w.b, swing: w.w / 100, bars, tracks };
@@ -80,7 +87,7 @@ export function decodeProject(code: string): ProjectState | null {
     const b64 = code.replace(/-/g, "+").replace(/_/g, "/");
     const json = typeof atob === "function" ? atob(b64) : Buffer.from(b64, "base64").toString("utf8");
     const w = JSON.parse(json) as Wire;
-    if (!w || w.v !== 2 || !Array.isArray(w.t)) return null;
+    if (!w || w.v !== 3 || !Array.isArray(w.t)) return null;
     if (typeof w.b !== "number" || typeof w.w !== "number") return null;
     return fromWire(w);
   } catch {

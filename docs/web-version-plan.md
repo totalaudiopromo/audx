@@ -101,8 +101,13 @@ lights up in-browser on Chrome/Edge. The sequencer flashes pads as it plays.
 - **M3.3 Projects** — ✅ *shipped.* `localStorage` autosave + **share links** that
   encode the whole session in the URL hash (no backend) — `web/src/project.ts`,
   round-trip tested (`web/tests/project.test.ts`).
-- **M3.4 Your samples** — drag-and-drop via the File API; decode with Web Audio so
-  the synth fallback and real samples both work, matching the CLI's resolve order.
+- **M3.4 Your samples** — ✅ *shipped.* Drop an audio file on a track (or 📁) →
+  `decodeAudioData` → it plays instead of the synth, with the CLI's precedence (a
+  resolvable sample wins, else synth; `web/src/samples.ts`). Persisted as raw bytes in
+  **IndexedDB** (survives reload); share links carry the sample *ref/name* only, so a
+  link on another machine falls back to the synth. v3 project encoding; render takes a
+  sample provider. Logic tested (`types`/`project`/`render` tests); decode + IndexedDB
+  are browser-only (manual QA).
 - **M3.5 Export** — ✅ *shipped:* offline render-to-WAV from the studio
   (`web/src/render.ts`, tested) reusing the native synth + scheduler timing. Stems
   still to do.

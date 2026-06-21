@@ -14,7 +14,7 @@ const sample: ProjectState = {
   bars: 2,
   tracks: [
     { id: 1, voice: "kick", steps: steps(32, { 0: VEL_ACCENT, 8: VEL_NORMAL, 16: VEL_ACCENT, 24: VEL_GHOST }), mute: false, solo: false, gain: 0.9, pan: -0.5 },
-    { id: 2, voice: "hh", steps: new Array(32).fill(VEL_NORMAL), mute: true, solo: false, gain: 0.55, pan: 0.3 },
+    { id: 2, voice: "hh", steps: new Array(32).fill(VEL_NORMAL), mute: true, solo: false, gain: 0.55, pan: 0.3, sampleRef: "abc123", sampleName: "myhat.wav" },
     { id: 3, voice: "bass", steps: new Array(32).fill(VEL_OFF), mute: false, solo: true, gain: 1.1, pan: 0 },
   ],
 };
@@ -36,6 +36,8 @@ describe("project encode/decode (v2: velocity, bars, pan)", () => {
       expect(t.solo).toBe(s.solo);
       expect(t.gain).toBeCloseTo(s.gain, 6);
       expect(t.pan).toBeCloseTo(s.pan, 6);
+      expect(t.sampleRef).toBe(s.sampleRef);
+      expect(t.sampleName).toBe(s.sampleName);
     });
   });
 
@@ -43,9 +45,9 @@ describe("project encode/decode (v2: velocity, bars, pan)", () => {
     expect(encodeProject(sample)).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
-  it("returns null on garbage or wrong version", () => {
+  it("returns null on garbage or an older version", () => {
     expect(decodeProject("not-base64!!")).toBeNull();
     expect(decodeProject("")).toBeNull();
-    expect(decodeProject(btoa('{"v":1}').replace(/=+$/, ""))).toBeNull();
+    expect(decodeProject(btoa('{"v":2}').replace(/=+$/, ""))).toBeNull();
   });
 });

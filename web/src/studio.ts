@@ -14,6 +14,7 @@ import {
 import { decodeProject, encodeProject } from "./project";
 import { renderProject, toWav } from "./render";
 import { MidiBridge } from "./midi";
+import { getSample, hasSample, loadAllFromIDB, putSample, sampleStereo } from "./samples";
 
 const SCHEDULE_AHEAD = 0.1; // seconds of lookahead
 const TICK_MS = 25;
@@ -101,6 +102,7 @@ function ensureAudio(): AudioContext {
   master.connect(analyser);
   analyser.connect(ctx.destination);
   for (const v of SYNTH_VOICES) voiceBuffer(v);
+  void loadAllFromIDB(ctx); // restore persisted samples for refs in this session
   return ctx;
 }
 
@@ -118,13 +120,25 @@ function secondsPerStep(): number {
   return 60.0 / state.bpm / 4.0; // 16th notes
 }
 
-/** Play a single voice one-shot now (pad clicks, MIDI pads). */
-function audition(voice: Voice): void {
+/** The AudioBuffer a track plays: its loaded sample if present, else the synth. */
+function bufferForTrack(track: Track): AudioBuffer {
+  if (track.sampleRef && hasSample(track.sampleRef)) {
+    return getSample(track.sampleRef)!.buffer!;
+  }
+  return voiceBuffer(track.voice);
+}
+
+function auditionBuffer(buf: AudioBuffer): void {
   if (!ctx) return;
   const src = ctx.createBufferSource();
-  src.buffer = voiceBuffer(voice);
+  src.buffer = buf;
   src.connect(master);
   src.start();
+}
+
+/** Play a single voice one-shot now (MIDI pads, by voice name). */
+function audition(voice: Voice): void {
+  if (ctx) auditionBuffer(voiceBuffer(voice));
 }
 
 const midi = new MidiBridge({
@@ -139,7 +153,7 @@ function scheduleStep(step: number, time: number): void {
     const vel = track.steps[step] ?? 0;
     if (vel <= 0) continue;
     const src = ctx!.createBufferSource();
-    src.buffer = voiceBuffer(track.voice);
+    src.buffer = bufferForTrack(track);
     const g = ctx!.createGain();
     g.gain.value = track.gain * vel;
     src.connect(g);
@@ -191,6 +205,19 @@ function togglePlay(): void {
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 const grid = $("#grid");
 const meterFill = $("#meter-fill");
+const escapeHtml = (s: string): string =>
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+async function loadSampleFile(track: Track, file: File | undefined): Promise<void> {
+  if (!file) return;
+  ensureAudio();
+  try {
+    const { ref, name } = await putSample(file, ctx!);
+    track.sampleRef = ref;
+    track.sampleName = name;
+    renderGrid(); persist();
+  } catch { /* undecodable file — leave on the synth */ }
+}
 
 function renderGrid(): void {
   grid.innerHTML = "";
@@ -211,7 +238,12 @@ function renderGrid(): void {
         <input class="vol" type="range" min="0" max="1.4" step="0.05" value="${track.gain}" title="volume" />
         <button class="mini del" title="remove">✕</button>
       </div>
-      <input class="pan" type="range" min="-1" max="1" step="0.1" value="${track.pan}" title="pan (L–R)" />`;
+      <input class="pan" type="range" min="-1" max="1" step="0.1" value="${track.pan}" title="pan (L–R)" />
+      <div class="sample-line">
+        <label class="sample-btn" title="load your own sample (or drop a file on this row)">📁<input class="sample-input" type="file" accept="audio/*" hidden /></label>
+        <span class="sample-name ${track.sampleRef ? "has" : ""}">${track.sampleRef ? escapeHtml(track.sampleName ?? "sample") : "synth"}</span>
+        ${track.sampleRef ? '<button class="mini clearsample" title="back to synth">×</button>' : ""}
+      </div>`;
     row.appendChild(head);
 
     const cells = document.createElement("div");
@@ -253,7 +285,7 @@ grid.addEventListener("pointerdown", (e) => {
   if (!c) return;
   painting = c.track.steps[c.step] > 0 ? VEL_OFF : VEL_NORMAL;
   paintCell(c.cell, c.track, c.step, painting);
-  if (painting > 0) audition(c.track.voice);
+  if (painting > 0) auditionBuffer(bufferForTrack(c.track));
 });
 grid.addEventListener("pointerover", (e) => {
   if (painting === null) return;
@@ -272,7 +304,7 @@ grid.addEventListener("contextmenu", (e) => {
     const idx = ON_LEVELS.findIndex((l) => Math.abs(l - c.track.steps[c.step]) < 1e-6);
     paintCell(c.cell, c.track, c.step, ON_LEVELS[(idx + 1) % ON_LEVELS.length]);
   }
-  audition(c.track.voice);
+  auditionBuffer(bufferForTrack(c.track));
   persist();
 });
 
@@ -284,7 +316,26 @@ grid.addEventListener("change", (e) => {
   if (el.classList.contains("voice")) track.voice = (el as HTMLSelectElement).value as Voice;
   if (el.classList.contains("vol")) track.gain = Number((el as HTMLInputElement).value);
   if (el.classList.contains("pan")) track.pan = Number((el as HTMLInputElement).value);
+  if (el.classList.contains("sample-input")) { void loadSampleFile(track, (el as HTMLInputElement).files?.[0]); return; }
   persist();
+});
+
+// drag a file onto a track row to load it as that track's sample
+grid.addEventListener("dragover", (e) => {
+  if (!(e as DragEvent).dataTransfer?.types.includes("Files")) return;
+  e.preventDefault();
+  (e.target as HTMLElement).closest(".row")?.classList.add("dragover");
+});
+grid.addEventListener("dragleave", (e) => {
+  (e.target as HTMLElement).closest(".row")?.classList.remove("dragover");
+});
+grid.addEventListener("drop", (e) => {
+  const row = (e.target as HTMLElement).closest(".row") as HTMLElement | null;
+  if (!row) return;
+  e.preventDefault();
+  row.classList.remove("dragover");
+  const track = trackById(Number(row.dataset.id));
+  if (track) void loadSampleFile(track, (e as DragEvent).dataTransfer?.files?.[0]);
 });
 grid.addEventListener("click", (e) => {
   const btn = (e.target as HTMLElement).closest("button.mini") as HTMLElement | null;
@@ -294,6 +345,7 @@ grid.addEventListener("click", (e) => {
   if (!track) return;
   if (btn.classList.contains("mute")) { track.mute = !track.mute; btn.classList.toggle("on", track.mute); }
   else if (btn.classList.contains("solo")) { track.solo = !track.solo; btn.classList.toggle("on", track.solo); }
+  else if (btn.classList.contains("clearsample")) { delete track.sampleRef; delete track.sampleName; renderGrid(); }
   else if (btn.classList.contains("del")) { state.tracks = state.tracks.filter((t) => t.id !== track.id); renderGrid(); }
   persist();
 });
@@ -381,7 +433,7 @@ function wireToolbar(): void {
 
   $("#wav").addEventListener("click", () => {
     ensureAudio();
-    const wav = toWav(renderProject(snapshot(), 2, ctx!.sampleRate));
+    const wav = toWav(renderProject(snapshot(), 2, ctx!.sampleRate, sampleStereo));
     const url = URL.createObjectURL(new Blob([wav.buffer as ArrayBuffer], { type: "audio/wav" }));
     const a = document.createElement("a");
     a.href = url; a.download = "audx-studio.wav"; a.click();

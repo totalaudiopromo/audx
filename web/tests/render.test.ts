@@ -39,6 +39,27 @@ describe("offline render", () => {
     expect(peakOf(renderProject(soft, 1, SR).left)).toBeLessThan(peakOf(renderProject(loud, 1, SR).left));
   });
 
+  it("plays a provided sample instead of the synth voice", () => {
+    const t = track("kick", [0]);
+    t.sampleRef = "s1";
+    const state: ProjectState = { bpm: 120, swing: 0, bars: 1, tracks: [t] };
+    // a distinctive stereo sample: left = +0.5 constant, right = 0
+    const left = new Float32Array(4800).fill(0.5);
+    const right = new Float32Array(4800);
+    const provider = (ref: string) => (ref === "s1" ? { left, right } : null);
+    const r = renderProject(state, 1, SR, provider);
+    expect(peakOf(r.left)).toBeGreaterThan(0.25); // 0.5 * vel 0.8 * centre-pan 0.707
+    expect(peakOf(r.right)).toBeLessThan(1e-6); // right channel of the sample is silent
+  });
+
+  it("falls back to the synth when the sample ref doesn't resolve", () => {
+    const t = track("kick", [0]);
+    t.sampleRef = "missing";
+    const state: ProjectState = { bpm: 120, swing: 0, bars: 1, tracks: [t] };
+    const r = renderProject(state, 1, SR, () => null); // provider can't resolve it
+    expect(peakOf(r.left)).toBeGreaterThan(0); // synth kick still sounds
+  });
+
   it("honours mute/solo", () => {
     const state: ProjectState = {
       bpm: 120, swing: 0, bars: 1,

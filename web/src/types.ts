@@ -18,6 +18,8 @@ export interface Track {
   solo: boolean;
   gain: number; // 0..1.4
   pan: number; // -1..1
+  sampleRef?: string; // key into the SampleStore; falls back to the synth voice
+  sampleName?: string; // display name (travels in share links; audio stays local)
 }
 
 /** The serializable part of a session (no transport/runtime state). */
@@ -26,6 +28,12 @@ export interface ProjectState {
   swing: number; // 0..1
   bars: number; // 1, 2 or 4
   tracks: Track[];
+}
+
+/** Whether a track plays a loaded sample (vs the synth voice). Mirrors the CLI's
+ *  precedence in arrangement._voice_audio: a resolvable sample wins, else synth. */
+export function trackUsesSample(track: Track, hasRef: (ref: string) => boolean): boolean {
+  return track.sampleRef !== undefined && hasRef(track.sampleRef);
 }
 
 /** Tracks that should sound, honouring solo then mute. */

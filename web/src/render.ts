@@ -14,8 +14,13 @@ export interface RenderResult {
   sampleRate: number;
 }
 
+/** Resolves a track's loaded sample to stereo channels, or null for synth. */
+export type SampleProvider = (ref: string) => { left: Float32Array; right: Float32Array } | null;
+
 /** Render `loops` full repeats of the session to a normalized stereo buffer. */
-export function renderProject(state: ProjectState, loops = 2, sampleRate = 48000): RenderResult {
+export function renderProject(
+  state: ProjectState, loops = 2, sampleRate = 48000, sampleProvider?: SampleProvider
+): RenderResult {
   const spb = 60.0 / Math.max(20, state.bpm) / 4.0; // seconds per 16th step
   const totalSteps = loops * state.bars * BAR_STEPS;
   const frames = Math.ceil((totalSteps * spb + 1.0) * sampleRate); // +1s tail
@@ -38,14 +43,25 @@ export function renderProject(state: ProjectState, loops = 2, sampleRate = 48000
     for (const track of audible) {
       const vel = track.steps[step] ?? 0;
       if (vel <= 0) continue;
-      const buf = voiceBuf(track.voice);
       const [lg, rg] = panGains(track.pan);
       const g = track.gain * vel;
-      const end = Math.min(start + buf.length, frames);
-      for (let i = start, j = 0; i < end; i++, j++) {
-        const v = buf[j] * g;
-        left[i] += v * lg;
-        right[i] += v * rg;
+      // a loaded sample wins; else the built-in synth voice (CLI precedence)
+      const sample = track.sampleRef && sampleProvider ? sampleProvider(track.sampleRef) : null;
+      if (sample) {
+        const len = sample.left.length;
+        const end = Math.min(start + len, frames);
+        for (let i = start, j = 0; i < end; i++, j++) {
+          left[i] += sample.left[j] * g * lg;
+          right[i] += sample.right[j] * g * rg;
+        }
+      } else {
+        const buf = voiceBuf(track.voice);
+        const end = Math.min(start + buf.length, frames);
+        for (let i = start, j = 0; i < end; i++, j++) {
+          const v = buf[j] * g;
+          left[i] += v * lg;
+          right[i] += v * rg;
+        }
       }
     }
   }

@@ -66,6 +66,12 @@
     .vol { width: 56px; accent-color: var(--secondary); }
     .mini.del { margin-left: auto; }
     .pan { width: 100%; accent-color: var(--accent); height: 3px; }
+    .sample-line { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--muted); }
+    .sample-btn { cursor: pointer; border: 1px solid var(--border); border-radius: 6px; padding: 0.1rem 0.35rem; background: var(--bg); }
+    .sample-btn:hover { border-color: var(--primary); }
+    .sample-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .sample-name.has { color: var(--secondary); }
+    .row.dragover .track-head { outline: 2px dashed var(--primary); outline-offset: 2px; }
     #bars { font-family: var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.2rem 0.3rem; }
 
     .cells { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; }
@@ -144,7 +150,9 @@
       Click cells to build a beat — drag to paint a row, <b>right-click</b> a cell to
       cycle its accent (ghost → normal → accent). <kbd>Space</kbd> plays/stops.
       <b>bars</b> sets the pattern length; <b>M</b> mutes, <b>S</b> solos, and the two
-      sliders set a track's volume and stereo pan. Everything you
+      sliders set a track's volume and stereo pan. Drop an audio file on a track (or
+      hit 📁) to play <em>your own sample</em> instead of the synth — it's stored only
+      in your browser. Everything you
       hear is the same procedural synth the <code>audx</code> CLI uses — and
       <em>copy as audx DSL</em> gives you a pattern you can paste straight into
       <code>audx</code>. <em>share link</em> puts the whole groove in a URL to send
