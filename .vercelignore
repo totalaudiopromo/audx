@@ -1,0 +1,15 @@
+.git
+.venv
+node_modules
+**/node_modules
+__pycache__
+**/__pycache__
+marketing
+dist
+build
+*.egg-info
+*.wav
+*.mp4
+.pytest_cache
+htmlcov
+.coverage*

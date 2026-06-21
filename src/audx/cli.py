@@ -88,8 +88,14 @@ def _load_project(path: Path) -> Project:
 def launch(
     project: Path | None = typer.Argument(None, help="Path to .audx project file"),
     samples: Path | None = typer.Option(None, "--samples", "-s", help="Samples directory"),
+    serve: bool = typer.Option(False, "--serve", help="Also host the live dashboard (watch on your phone)"),
+    serve_port: int = typer.Option(8080, "--serve-port", help="Dashboard port"),
 ) -> None:
-    """Launch the audx TUI."""
+    """Launch the audx TUI.
+
+    With ``--serve`` the TUI also hosts the read-only dashboard, so the session you
+    play here shows up live at ``http://<this-machine>:<port>/`` on any device.
+    """
     if samples:
         os.environ["AUDX_SAMPLES_DIR"] = str(samples)
     if project is not None:
@@ -105,6 +111,12 @@ def launch(
                 raise
             except Exception as exc:
                 typer.echo(f"Could not auto-load last project: {exc}", err=True)
+    if serve:
+        from audx.web import serve_in_background
+
+        # 0.0.0.0 so a phone on the same Wi-Fi can reach it; the dashboard is read-only.
+        serve_in_background(host="0.0.0.0", port=serve_port)
+        typer.echo(f"  ✓ dashboard live on http://localhost:{serve_port}/  (and your LAN IP)")
     DAWApp(project=project, samples_dir=samples).run()
 
 
@@ -137,11 +149,13 @@ def init(
 def open(
     project: Path | None = typer.Argument(None, help="Path to .audx project file or folder"),
     samples: Path | None = typer.Option(None, "--samples", "-s", help="Samples directory"),
+    serve: bool = typer.Option(False, "--serve", help="Also host the live dashboard"),
+    serve_port: int = typer.Option(8080, "--serve-port", help="Dashboard port"),
 ) -> None:
     """Open the TUI on a project (alias for `launch`, matches spec §06)."""
     if project and project.is_dir():
         project = project / "project.audx"
-    launch(project=project, samples=samples)
+    launch(project=project, samples=samples, serve=serve, serve_port=serve_port)
 
 
 @app.command()

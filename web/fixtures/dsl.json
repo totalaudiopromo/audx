@@ -1,0 +1,1517 @@
+[
+  {
+    "dsl": "kick 4/4",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "kick",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "snare 2/8",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "snare",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "snare",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "hh 16x8",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "hihat",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "hh 8x8",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "hihat",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "perc 1/4",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "percussion",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "kick 3/4",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "kick",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 1.3333333333333333,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 2.6666666666666665,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "perc e(5,16)",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "percussion",
+        "beat": 0.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 2.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 3.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "perc e(5,16,2)",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "percussion",
+        "beat": 0.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 1.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 2.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "percussion",
+        "beat": 3.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "bass e(7,16)",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "bass",
+        "beat": 0.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "bass",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "bass",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "bass",
+        "beat": 2.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "bass",
+        "beat": 2.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "bass",
+        "beat": 3.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "bass",
+        "beat": 3.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "clap [1.0.1.0.1.1.0.0]",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "clap",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "clap",
+        "beat": 1.0666666666666667,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "clap",
+        "beat": 2.1333333333333333,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "clap",
+        "beat": 2.6666666666666665,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "[1.0.1.0]",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "t",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 2.2857142857142856,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "kick [1 0 1 0 1 0 1 0]",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "kick",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "x---x-----x---x-",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "t",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 2.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 3.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "x-x---x-x-x---x-",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "t",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 0.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 2.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "t",
+        "beat": 3.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "bd 4/4 | vel 0.5 | ch 2",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "kick",
+        "beat": 0.0,
+        "velocity": 0.5,
+        "channel": 2,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 1.0,
+        "velocity": 0.5,
+        "channel": 2,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 2.0,
+        "velocity": 0.5,
+        "channel": 2,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 3.0,
+        "velocity": 0.5,
+        "channel": 2,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "hh 16x8 | swing 12%",
+    "length_beats": 4.0,
+    "swing": 0.12,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "hihat",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 0.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "bass e(5,16) | tune -7st",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": -7.0,
+    "steps": [
+      {
+        "sample": "bass",
+        "beat": 0.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": -7.0
+      },
+      {
+        "sample": "bass",
+        "beat": 1.5,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": -7.0
+      },
+      {
+        "sample": "bass",
+        "beat": 2.25,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": -7.0
+      },
+      {
+        "sample": "bass",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": -7.0
+      },
+      {
+        "sample": "bass",
+        "beat": 3.75,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": -7.0
+      }
+    ]
+  },
+  {
+    "dsl": "stab [1.0.0.0] | tune 3st | pan L50",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": -0.5,
+    "tune_semitones": 3.0,
+    "steps": [
+      {
+        "sample": "stab",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": -0.5,
+        "tune_semitones": 3.0
+      }
+    ]
+  },
+  {
+    "dsl": "keys 4/4 | gain -3db | pan R100",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": -3.0,
+    "pan": 1.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "keys",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": -3.0,
+        "pan": 1.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "keys",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": -3.0,
+        "pan": 1.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "keys",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": -3.0,
+        "pan": 1.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "keys",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": -3.0,
+        "pan": 1.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "kick 4/4 | humanize 8% | chance 70%",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.08,
+    "chance": 0.7,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "kick",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "oh 2/8 | pan C",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "openhat",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "openhat",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "hat 4/4",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "hihat",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "hihat",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "sd 4/4",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "snare",
+        "beat": 0.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "snare",
+        "beat": 1.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "snare",
+        "beat": 2.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "snare",
+        "beat": 3.0,
+        "velocity": 0.8,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "rim 16x8 | vel 0.6",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "rim",
+        "beat": 0.0,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 0.25,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 0.5,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 0.75,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 1.0,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 1.25,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 1.5,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 1.75,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 2.0,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 2.25,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 2.5,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 2.75,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 3.0,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 3.25,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 3.5,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "rim",
+        "beat": 3.75,
+        "velocity": 0.6,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  },
+  {
+    "dsl": "kick 4/4 | vel 0",
+    "length_beats": 4.0,
+    "swing": 0.0,
+    "humanize": 0.0,
+    "chance": 1.0,
+    "gain_db": 0.0,
+    "pan": 0.0,
+    "tune_semitones": 0.0,
+    "steps": [
+      {
+        "sample": "kick",
+        "beat": 0.0,
+        "velocity": 0.0,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 1.0,
+        "velocity": 0.0,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 2.0,
+        "velocity": 0.0,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      },
+      {
+        "sample": "kick",
+        "beat": 3.0,
+        "velocity": 0.0,
+        "channel": 0,
+        "gain_db": 0.0,
+        "pan": 0.0,
+        "tune_semitones": 0.0
+      }
+    ]
+  }
+]

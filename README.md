@@ -31,6 +31,10 @@ audx demo loop.wav
 
 <img src="docs/assets/audx-demo.gif" alt="audx demo session" width="640" />
 
+> **No install? Play it in your browser** — the real pattern language + synth kit run
+> client-side via Pyodide at [`/play.html`](site/play.html) on the landing page
+> (live once GitHub Pages is enabled).
+
 That writes a full multi-track beat — kick, sub, clap, hats, percussion — to
 `loop.wav` using the **built-in synth kit**. Open it and you're listening to
 audx. Then make your own:
@@ -174,7 +178,7 @@ Full walkthrough (kids included): [docs/playing-live.md](docs/playing-live.md).
 | **MIDI** | `export midi` · `midi out\|rec\|list` |
 | **AI (optional extras)** | `ai pattern\|similar\|tag\|groove\|key` |
 | **Bridges** | `plugins scan` · `push2 map\|lights` · `heartmula` · `sadact` · `daemon` |
-| **Live dashboard** | `serve` |
+| **Live dashboard** | `serve` · `open --serve` (host it from the TUI) |
 | **Diagnostics** | `doctor` · `version` |
 
 Run `audx --help` or `audx <command> --help` for details.

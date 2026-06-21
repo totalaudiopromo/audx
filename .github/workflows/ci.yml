@@ -43,3 +43,39 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: false
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Regenerate golden-vector fixtures from the real parser
+      run: uv run python scripts/gen_web_fixtures.py
+
+    - name: Fail if committed fixtures drifted
+      run: git diff --exit-code web/fixtures
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+
+    - name: Install web deps
+      run: npm ci
+      working-directory: web
+
+    - name: Typecheck (tsc)
+      run: npm run typecheck
+      working-directory: web
+
+    - name: Parity tests (vitest)
+      run: npm test
+      working-directory: web
+
+    - name: Build studio bundle
+      run: npm run build
+      working-directory: web

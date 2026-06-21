@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>audx studio — browser drum machine</title>
+  <meta name="description" content="A 16-step drum machine powered by the real audx synth, running natively in your browser. Build a groove, export the audx DSL." />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .studio { max-width: 1080px; margin: 0 auto; padding: 1.2rem 1.2rem 4rem; }
+    .top { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .top h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); letter-spacing: -0.02em; }
+    .top .tag { color: var(--muted); font-size: 0.85rem; }
+    .top .back { margin-left: auto; color: var(--muted); font-size: 0.85rem; }
+
+    .transport {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap;
+      background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 0.85rem 1.1rem; margin-bottom: 1.2rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    }
+    .btn {
+      font-family: var(--mono); font-weight: 700; cursor: pointer; font-size: 0.95rem;
+      border: 1px solid var(--border); border-radius: 9px; padding: 0.5rem 1rem;
+      background: var(--bg); color: var(--text); transition: all 0.12s ease;
+    }
+    .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn.on { border-color: var(--secondary); color: var(--secondary); }
+    .midi-status { color: var(--muted); font-size: 0.8rem; align-self: center; }
+    #play {
+      background: var(--primary); color: #1a1207; border-color: var(--primary);
+      min-width: 92px;
+    }
+    #play:hover { background: var(--accent); border-color: var(--accent); color: #1a1207; }
+    #play.playing { background: var(--accent); border-color: var(--accent); }
+
+    .knob { display: flex; align-items: center; gap: 0.55rem; color: var(--muted); font-size: 0.82rem; }
+    .knob input[type="range"] { width: 120px; accent-color: var(--primary); }
+    .knob b { color: var(--text); font-variant-numeric: tabular-nums; min-width: 3.2em; text-align: right; }
+    .spacer { flex: 1; }
+    .meter { width: 130px; height: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 99px; overflow: hidden; }
+    #meter-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--secondary), var(--primary), var(--accent)); transition: width 0.06s linear; }
+
+    /* grid */
+    .row { display: grid; grid-template-columns: 184px 1fr; gap: 0.7rem; align-items: center; margin-bottom: 0.5rem; }
+    .track-head {
+      display: flex; flex-direction: column; gap: 0.4rem;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem 0.6rem;
+    }
+    .voice {
+      font-family: var(--mono); font-weight: 700; font-size: 0.9rem;
+      background: var(--bg); color: var(--primary); border: 1px solid var(--border);
+      border-radius: 6px; padding: 0.28rem 0.4rem; cursor: pointer;
+    }
+    .track-btns { display: flex; align-items: center; gap: 0.3rem; }
+    .mini {
+      font-family: var(--mono); font-size: 0.7rem; font-weight: 700; cursor: pointer;
+      width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--muted);
+    }
+    .mini:hover { color: var(--text); }
+    .mini.mute.on { background: var(--accent); color: #1a1207; border-color: var(--accent); }
+    .mini.solo.on { background: var(--secondary); color: #14210a; border-color: var(--secondary); }
+    .vol { width: 56px; accent-color: var(--secondary); }
+    .mini.del { margin-left: auto; }
+    .pan { width: 100%; accent-color: var(--accent); height: 3px; }
+    .sample-line { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--muted); }
+    .sample-btn { cursor: pointer; border: 1px solid var(--border); border-radius: 6px; padding: 0.1rem 0.35rem; background: var(--bg); }
+    .sample-btn:hover { border-color: var(--primary); }
+    .sample-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .sample-name.has { color: var(--secondary); }
+    .row.dragover .track-head { outline: 2px dashed var(--primary); outline-offset: 2px; }
+    #bars { font-family: var(--mono); background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 0.2rem 0.3rem; }
+
+    .cells { display: grid; grid-template-columns: repeat(16, 1fr); gap: 4px; }
+    .cell {
+      aspect-ratio: 1 / 1; min-height: 30px; cursor: pointer; padding: 0;
+      border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2);
+      transition: transform 0.08s ease, background 0.08s ease, box-shadow 0.08s ease;
+    }
+    .cell.downbeat { background: #202020; border-color: #3a3a3a; }
+    .cell:hover { transform: translateY(-1px); border-color: var(--primary); }
+    .cell.on {
+      background: linear-gradient(160deg, var(--primary), #b8895a);
+      border-color: var(--primary);
+      box-shadow: 0 0 10px rgba(212, 165, 116, 0.35);
+    }
+    .cell.on.ghost { opacity: 0.5; }
+    .cell.on.accent { box-shadow: 0 0 14px rgba(232, 166, 194, 0.6); filter: brightness(1.18); }
+    .cell.barline { margin-left: 6px; }
+    .cell.on.downbeat { background: linear-gradient(160deg, var(--accent), var(--primary)); }
+    .cell.playhead { outline: 2px solid var(--secondary); outline-offset: 1px; }
+    .cell.on.playhead { box-shadow: 0 0 16px rgba(168, 192, 135, 0.8); transform: scale(1.06); }
+
+    .foot { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.4rem; }
+    .hint { color: var(--muted); font-size: 0.82rem; margin-top: 1.6rem; line-height: 1.7; }
+    .hint kbd { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 0.05em 0.4em; color: var(--text); }
+    #dsl-out {
+      display: none; white-space: pre; font-family: var(--mono); font-size: 0.82rem;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--secondary); padding: 0.9rem 1rem; margin-top: 1rem; overflow-x: auto;
+    }
+    #dsl-out.show { display: block; }
+    .song { margin-top: 1.6rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2); }
+    .song > summary { cursor: pointer; padding: 0.8rem 1.1rem; font-weight: 700; color: var(--primary); }
+    .song-body { padding: 0 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+    .song-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+    .song-label { color: var(--muted); font-size: 0.82rem; }
+    .chips-row { display: flex; flex-wrap: wrap; gap: 0.4rem; min-height: 1.8rem; }
+    .scene-chip, .seq-chip {
+      cursor: pointer; font-family: var(--mono); font-size: 0.8rem;
+      border: 1px solid var(--border); border-radius: 999px; padding: 0.25rem 0.7rem;
+      background: var(--surface); color: var(--text);
+    }
+    .scene-chip:hover { border-color: var(--primary); color: var(--primary); }
+    .seq-chip { background: var(--bg); color: var(--secondary); }
+    .seq-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .scene-chip.active, .seq-chip.active {
+      border-color: var(--primary); color: #1a1207; background: var(--primary); font-weight: 700;
+    }
+    @media (max-width: 640px) {
+      .row { grid-template-columns: 1fr; }
+      .cell { min-height: 26px; }
+      .knob input[type="range"] { width: 84px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="studio">
+    <div class="top">
+      <h1>audx studio</h1>
+      <span class="tag">the real synth, in your browser — no install</span>
+      <a class="back" href="index.html">← audx</a>
+    </div>
+
+    <div class="transport">
+      <button id="play" class="btn">▶ play</button>
+      <button id="add" class="btn">+ track</button>
+      <button id="clear" class="btn">clear</button>
+      <div class="knob">bpm <input id="bpm" type="range" min="70" max="180" step="1" value="124" /> <b id="bpm-val">124</b></div>
+      <div class="knob">swing <input id="swing" type="range" min="0" max="60" step="1" value="0" /> <b id="swing-val">0%</b></div>
+      <div class="knob">bars
+        <select id="bars" title="pattern length">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+      <div class="spacer"></div>
+      <div class="meter" title="master output"><div id="meter-fill"></div></div>
+    </div>
+
+    <div id="grid"></div>
+
+    <details class="song" id="song-panel">
+      <summary>song — chain scenes into an arrangement</summary>
+      <div class="song-body">
+        <div class="song-row">
+          <button id="save-scene" class="btn">save grid as scene</button>
+          <span class="song-label">scenes (click to add to the sequence):</span>
+        </div>
+        <div id="scene-chips" class="chips-row"></div>
+        <div class="song-row"><span class="song-label">sequence:</span></div>
+        <div id="seq-chips" class="chips-row"></div>
+        <div class="song-row">
+          <button id="song-play" class="btn">▶ play song (live)</button>
+          <button id="song-stop" class="btn">■ stop</button>
+          <button id="song-wav" class="btn">download song wav</button>
+          <button id="song-export" class="btn">export song JSON</button>
+          <label class="btn" title="import an audx song JSON">import JSON<input id="song-import" type="file" accept="application/json,.json" hidden /></label>
+          <span id="song-status" class="midi-status"></span>
+        </div>
+      </div>
+    </details>
+
+    <div class="foot">
+      <button id="export" class="btn">copy as audx DSL</button>
+      <button id="share" class="btn">share link</button>
+      <button id="wav" class="btn">download wav</button>
+      <button id="stems" class="btn">download stems</button>
+      <button id="midi" class="btn">connect MIDI / Push 2</button>
+      <span id="midi-status" class="midi-status"></span>
+    </div>
+    <pre id="dsl-out"></pre>
+
+    <p class="hint">
+      Click cells to build a beat — drag to paint a row, <b>right-click</b> a cell to
+      cycle its accent (ghost → normal → accent). <kbd>Space</kbd> plays/stops.
+      <b>bars</b> sets the pattern length; <b>M</b> mutes, <b>S</b> solos, and the two
+      sliders set a track's volume and stereo pan. Drop an audio file on a track (or
+      hit 📁) to play <em>your own sample</em> instead of the synth — it's stored only
+      in your browser. Everything you
+      hear is the same procedural synth the <code>audx</code> CLI uses — and
+      <em>copy as audx DSL</em> gives you a pattern you can paste straight into
+      <code>audx</code>. <em>share link</em> puts the whole groove in a URL to send
+      to anyone; <em>download wav</em> renders it to a file. Your work autosaves in
+      this browser. <em>connect MIDI / Push 2</em> (Chrome/Edge) plays voices from a
+      controller's pads and lights up a Push 2 — the same LED bytes the CLI sends.
+      Nothing is uploaded; it all runs on your machine.
+    </p>
+  </main>
+
+  <script type="module" src="studio.js"></script>
+</body>
+</html>

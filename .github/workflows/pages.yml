@@ -1,0 +1,52 @@
+name: Deploy landing page
+
+# Publishes the static site/ to GitHub Pages on every push to main that touches it.
+# One-time setup: repo Settings → Pages → Source = "GitHub Actions".
+# URL: https://totalaudiopromo.github.io/audx/
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "web/**"
+      - "src/audx/synth.py"
+      - "src/audx/pattern.py"
+      - "scripts/sync-web-modules.sh"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync browser-playground modules from src/
+        run: bash scripts/sync-web-modules.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build the studio bundle (site/studio.js)
+        run: npm ci && npm run build
+        working-directory: web
+      - uses: actions/configure-pages@v5
+      - name: Upload site/
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
